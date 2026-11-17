@@ -1,0 +1,74 @@
+FLEET STUDIO - CLOUD SETUP  (everything free, nothing runs on your PC)
+=======================================================================
+
+How it works
+  Website (Vercel)  ->  saves your queue/channels in your GitHub repository
+                    ->  starts "Cloud Production" on GitHub Actions
+  GitHub Actions    ->  makes the 1080p video + thumbnail + 2 Shorts with ffmpeg
+                    ->  uploads to YouTube with your schedule (48h / 72h / 96h)
+                    ->  autopilot runs by itself every 2 hours
+
+STEP 1 - GitHub repository (the "Automation Repository")
+  1. github.com -> New repository -> name: fleet-studio -> PUBLIC
+     (public = unlimited free Actions minutes; private = 2,000 min/month)
+  2. Upload all files of this fleet_studio folder (keep the folders:
+     .github, runner, site, fleet, inbox, assets, tools).
+     Easiest: in this folder run
+        git remote add origin https://github.com/YOURNAME/fleet-studio.git
+        git push -u origin main
+  3. Repo -> Settings -> Actions -> General -> Workflow permissions ->
+     "Read and write permissions" -> Save.
+
+STEP 2 - Cloud access token
+  github.com -> Settings -> Developer settings -> Fine-grained tokens -> Generate
+    Repository access: only "fleet-studio"
+    Permissions: Contents = Read and write, Actions = Read and write,
+                 Secrets = Read and write
+  Copy the token (github_pat_...).
+
+STEP 3 - Website on Vercel
+  vercel.com -> Add New -> Project -> import the fleet-studio repo -> Deploy.
+  (vercel.json already tells Vercel to publish only the "site" folder.)
+  You get a link like https://fleet-studio-xxxx.vercel.app
+  Open it -> New profile -> username, PIN, repo "YOURNAME/fleet-studio", token.
+
+STEP 4 - Google key for YouTube (one time)
+  1. console.cloud.google.com -> new project -> APIs & Services -> Library ->
+     "YouTube Data API v3" -> Enable.
+  2. OAuth consent screen -> External -> app name + your email ->
+     Test users: add every Google account that owns one of your channels.
+     (Later press "Publish app" so the login does not expire every 7 days.)
+  3. Credentials -> Create credentials -> OAuth client ID -> "Web application"
+     Authorized redirect URI = your Vercel link exactly, with "/" at the end,
+     e.g.  https://fleet-studio-xxxx.vercel.app/
+  4. Website -> Settings -> paste Client ID + Client secret -> Save.
+
+STEP 5 - Channels
+  Website -> Channels -> add channel (name, speaker, avatar PNG, reference @handle,
+  schedule) -> "Connect YouTube" -> choose the channel -> Allow.
+  The YouTube key is saved as an encrypted GitHub secret (YT_TOKEN_...).
+
+STEP 6 - Make videos
+  Produce tab -> paste reference URL + upload the MP3 -> "Produce now in the cloud".
+  Or "Import all videos" -> then switch Autopilot ON for the channel.
+
+AUDIO AND BOT BLOCKS
+  YouTube often blocks downloads from cloud servers. So:
+    a) upload the MP3 yourself (cobalt.tools / onlymp3), or
+    b) run tools\Start-Audio-Bridge.bat on your PC and press
+       "Get it via Local Audio Bridge" / "Fetch missing audio via Local Bridge", or
+    c) Settings -> upload cookies.txt (the cloud then tries to download itself).
+  The background "reference video" also needs (c); without it the cloud uses
+  the thumbnail with slow motion automatically.
+
+GOOGLE LIMITS (free)
+  * About 6 uploads per day per Google project. 1 video + 2 Shorts = 3 uploads.
+    When the limit is hit, the item waits 24h and autopilot retries.
+  * Until Google audits your API project, YouTube can lock API uploads as PRIVATE.
+    Ask for the free "YouTube API Services Audit" in Google Cloud.
+  * Custom thumbnails need a phone-verified channel: youtube.com/verify
+
+NOTE: in a public repo everyone can see files in inbox/, assets/ and fleet/
+(audio waits there until it is processed, then it is deleted). Keys and
+YouTube tokens are GitHub secrets and are never visible.
+Only use reference channels whose owner gave you written permission.

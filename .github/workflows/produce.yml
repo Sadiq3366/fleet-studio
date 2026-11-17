@@ -1,0 +1,48 @@
+name: Cloud Production
+run-name: "${{ inputs.mode }} ${{ inputs.title || inputs.item || inputs.handle }}"
+on:
+  workflow_dispatch:
+    inputs:
+      mode:    { description: "produce | autopilot | import", default: "autopilot", required: true }
+      item:    { description: "queue item id (produce)", default: "" }
+      channel: { description: "channel id (import)", default: "" }
+      handle:  { description: "reference channel @handle (import)", default: "" }
+      title:   { description: "label for the run list", default: "" }
+  schedule:
+    - cron: "17 */2 * * *"          # autopilot every 2 hours
+permissions:
+  contents: write
+concurrency:
+  group: fleet-runner               # one run at a time -> no clashes in fleet/state.json
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: runner/requirements.txt }
+      - name: Install ffmpeg + font + libraries
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          curl -sSfL -o runner/Anton-Regular.ttf https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf || true
+          pip install -q -r runner/requirements.txt
+      - name: Produce
+        env:
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+          MODE: ${{ inputs.mode || 'autopilot' }}
+          ITEM: ${{ inputs.item }}
+          CHANNEL: ${{ inputs.channel }}
+          HANDLE: ${{ inputs.handle }}
+        run: python runner/fleet.py "$MODE" --item "$ITEM" --channel "$CHANNEL" --handle "$HANDLE"
+      - name: Keep the files of this run (7 days)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-${{ github.run_id }}
+          path: |
+            out/**/*.mp4
+            out/**/thumbnail.*
+          if-no-files-found: ignore
+          retention-days: 7

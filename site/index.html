@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fleet Studio</title>
+<style>
+:root{--bg:#0d0f14;--card:#161a22;--line:#262c38;--text:#e8ebf1;--mute:#8b93a5;--acc:#ff3b3b;--acc2:#ffb020;--ok:#2ecc71;--err:#ff5a5a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid var(--line);background:#11141b;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.logo{font-weight:800;font-size:18px}.logo b{color:var(--acc)}.pill{font-size:12px;padding:3px 9px;border-radius:99px;background:#222836;color:var(--mute)}
+nav{display:flex;gap:4px;flex-wrap:wrap}nav button{background:none;border:0;color:var(--mute);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px}
+nav button.on{background:#222836;color:var(--text)}.sp{flex:1}
+main{max-width:1150px;margin:0 auto;padding:22px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+h2{margin:0 0 4px;font-size:19px}h3{margin:0 0 10px;font-size:16px}.mute{color:var(--mute);font-size:13px}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 5px;font-weight:600}
+input,select{width:100%;background:#0f1218;border:1px solid var(--line);color:var(--text);border-radius:9px;padding:10px 11px;font:inherit}
+input[type=file]{padding:8px}input[type=checkbox]{width:auto;margin-right:7px;accent-color:var(--acc)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 16px}
+.chk{display:flex;align-items:center;color:var(--text);font-weight:500;margin:12px 0 0}
+.btn{background:var(--acc);color:#fff;border:0;padding:10px 18px;border-radius:9px;cursor:pointer;font:inherit;font-weight:700}
+.btn.sec{background:#262c38}.btn.sm{padding:5px 10px;font-size:13px}.btn:disabled{opacity:.5;cursor:wait}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center}
+table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:14px}th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase}
+.st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:#262c38;white-space:nowrap}
+.st.done,.st.success{background:#173d27;color:var(--ok)}.st.error,.st.failure{background:#45191b;color:var(--err)}.st.running,.st.in_progress,.st.queued{background:#463513;color:var(--acc2)}.st.waiting{background:#2b2550;color:#b6a8ff}
+.chan{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.av{width:54px;height:54px;border-radius:12px;background:#222836 center/contain no-repeat;flex:none}
+.msg{padding:10px 12px;border-radius:9px;background:#1d2533;margin-top:12px;font-size:14px}.msg.err{background:#45191b}
+.login{max-width:420px;margin:7vh auto}.hide{display:none!important}a{color:#7fb3ff}
+.log{background:#090b0f;border-radius:9px;padding:10px;font:12px/1.45 Consolas,monospace;max-height:220px;overflow:auto;white-space:pre-wrap;color:#b9c0cf;margin-top:8px}
+</style>
+</head>
+<body>
+<!-- ============ LOGIN ============ -->
+<div id="loginBox" class="login card hide">
+  <h2>Fleet Studio <span class="pill">Family Edition</span></h2>
+  <div class="mute">Automated multi-channel cloud network.</div>
+  <div id="loginForm">
+    <label>Profile</label><select id="lu"></select>
+    <label>Password / PIN</label><input id="lp" type="password" autocomplete="current-password">
+    <div class="btns"><button class="btn" id="loginBtn">Sign in</button><button class="btn sec" id="toNew">New profile</button></div>
+  </div>
+  <div id="newForm" class="hide">
+    <label>Username</label><input id="nu">
+    <label>Password / PIN</label><input id="np" type="password" autocomplete="new-password">
+    <label>Role</label><select id="nr"><option value="admin">Admin - sees all channels</option><option value="owner">Channel owner - sees own channels</option></select>
+    <label>Automation repository (owner/name)</label><input id="nrepo" placeholder="yourname/fleet-studio">
+    <label>Cloud access token (GitHub fine-grained token)</label><input id="ntok" type="password" placeholder="github_pat_...">
+    <div class="mute">Encrypted in your browser with your PIN. It is never sent anywhere except api.github.com.</div>
+    <div class="btns"><button class="btn" id="newBtn">Create profile</button><button class="btn sec" id="toLogin">Back</button></div>
+  </div>
+  <div id="loginMsg"></div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="appBox" class="hide">
+<header>
+  <div class="logo">Fleet <b>Studio</b></div>
+  <nav id="nav">
+    <button data-t="produce" class="on">Produce</button><button data-t="queue">Queue</button>
+    <button data-t="runs">Cloud runs</button><button data-t="channels">Channels</button><button data-t="settings">Settings</button>
+  </nav>
+  <span class="sp"></span><span class="pill" id="who"></span><span class="pill">Unlimited Cloud Min</span><button class="btn sec sm" id="logout">Sign out</button>
+</header>
+<main>
+<section id="t-produce">
+  <div class="card">
+    <h2>New video</h2><div class="mute">You give a reference video and an audio file. The cloud makes a 1080p video, a high-CTR thumbnail and 2 Shorts, then uploads them on your schedule.</div>
+    <div class="row">
+      <div><label>Channel</label><select id="pChan"></select></div>
+      <div><label>Reference YouTube URL</label><input id="pUrl" placeholder="https://www.youtube.com/watch?v=..."></div>
+    </div>
+    <div class="row">
+      <div><label>Your downloaded MP3 / M4A audio (bypasses bot blocks 100%)</label><input type="file" id="pAudio" accept=".mp3,.m4a,.wav,.aac,.ogg,.opus,.webm">
+        <div class="mute">Get it with <a href="https://cobalt.tools" target="_blank">Cobalt Web</a> / <a href="https://en.onlymp3.to" target="_blank">OnlyMP3</a>, or <button class="btn sec sm" id="pBridge">Get it via Local Audio Bridge</button> <span id="pBridgeMsg"></span></div></div>
+      <div><label>Title (optional - default: reference title)</label><input id="pTitle"></div>
+    </div>
+    <div class="row">
+      <div><label>Thumbnail (optional - otherwise generated automatically)</label><input type="file" id="pThumb" accept="image/*"></div>
+      <div><label>Speaker cutout - transparent PNG, bottom-left (optional - default: channel avatar)</label><input type="file" id="pSpeaker" accept=".png,.webp"></div>
+    </div>
+    <div class="row">
+      <div><label>Format</label><select id="pAspect"><option value="16:9">16:9 full video</option><option value="9:16">9:16 vertical Shorts</option></select></div>
+      <div><label>Background</label><select id="pBg"><option value="video">Reference video (muted)</option><option value="image">Thumbnail with slow motion</option></select></div>
+      <div><label>Publishing schedule</label><select id="pSched">
+        <option value="auto48">Auto 2-day gap (48h)</option><option value="auto72" selected>Auto 3-day gap (72h) - recommended</option>
+        <option value="auto96">Auto 4-day gap (96h)</option><option value="now">Publish immediately (public)</option></select></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="pShorts" checked>Auto-extract 2 vertical Shorts</label>
+    <label class="chk"><input type="checkbox" id="pUpload" checked>Direct upload to YouTube + attach winning high-CTR thumbnail</label>
+    <div class="btns"><button class="btn" id="pGo">Produce now in the cloud</button><button class="btn sec" id="pAdd">Add to queue</button></div>
+    <div id="pMsg"></div>
+  </div>
+  <div class="card">
+    <h3>Import all videos from reference channel</h3>
+    <div class="mute">Every video goes into the queue. With autopilot on, the cloud makes videos with the channel's schedule gap.</div>
+    <div class="row">
+      <div><label>Channel</label><select id="iChan"></select></div>
+      <div><label>Reference channel</label><input id="iHandle" placeholder="@MenteImparable-e6u"></div>
+    </div>
+    <div class="btns"><button class="btn" id="iGo">Import all videos</button></div>
+    <div id="iMsg"></div>
+  </div>
+</section>
+
+<section id="t-queue" class="hide">
+  <div class="card">
+    <h2>Reference video queue</h2>
+    <div class="mute">Autopilot creates videos with the channel's schedule gap. It keeps 3 videos scheduled ahead per channel and runs every 2 hours.</div>
+    <div class="btns"><select id="qChan" style="max-width:280px"></select>
+      <button class="btn sec sm" id="qBridge">Fetch missing audio via Local Bridge</button>
+      <button class="btn sec sm" id="qAuto">Run autopilot now</button><span id="qMsg" class="mute"></span></div>
+    <div style="overflow:auto"><table><thead><tr><th>#</th><th>Video</th><th>Channel</th><th>Options</th><th>Status</th><th></th></tr></thead><tbody id="qBody"><tr><td colspan=6 class="mute">Loading...</td></tr></tbody></table></div>
+  </div>
+</section>
+
+<section id="t-runs" class="hide">
+  <div class="card"><h2>Recent cloud production runs</h2><div class="mute">Videos and thumbnails of every run are kept 7 days (open a run, then "Artifacts").</div><div id="rList" class="mute">Loading...</div></div>
+  <div class="card"><h3>Published / scheduled</h3><div id="pubList" class="mute">Loading...</div></div>
+</section>
+
+<section id="t-channels" class="hide">
+  <div class="card"><h2>Channels</h2><div id="cList" class="mute">Loading...</div><div id="cTopMsg"></div></div>
+  <div class="card">
+    <h3 id="cFormTitle">Add channel</h3>
+    <input type="hidden" id="cId">
+    <div class="row">
+      <div><label>Channel name</label><input id="cName" placeholder="Sabiduría Diaria"></div>
+      <div><label>Speaker name</label><input id="cSpeaker"></div>
+      <div><label>Speaker avatar - transparent PNG (optional)</label><input type="file" id="cAvatar" accept=".png,.webp"></div>
+    </div>
+    <div class="row">
+      <div><label>Reference channel</label><input id="cRef" placeholder="@channelhandle"></div>
+      <div><label>Schedule</label><select id="cSched"><option value="auto48">Every 2 days (48h)</option><option value="auto72" selected>Every 3 days (72h)</option><option value="auto96">Every 4 days (96h)</option></select></div>
+      <div><label>Default format</label><select id="cAspect"><option value="16:9">16:9</option><option value="9:16">9:16</option></select></div>
+    </div>
+    <div class="row">
+      <div><label>Credit line at top of every description</label><input id="cCredit" placeholder="Used with permission of ..."></div>
+      <div><label>Owner portal (profile username)</label><input id="cOwner"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="cShorts" checked>Auto-extract 2 Shorts for every video</label>
+    <div class="btns"><button class="btn" id="cSave">Save channel</button><button class="btn sec" id="cNew">New</button></div>
+    <div id="cMsg"></div>
+  </div>
+</section>
+
+<section id="t-settings" class="hide">
+  <div class="card">
+    <h2>Cloud engine</h2><div id="sRepo" class="msg">Checking...</div>
+    <div class="btns"><a class="btn sec sm" id="sRepoLink" target="_blank">Open repository</a><a class="btn sec sm" id="sActLink" target="_blank">Open Actions</a></div>
+  </div>
+  <div class="card">
+    <h3>Google OAuth client (for YouTube upload)</h3>
+    <div class="mute">Google Cloud, then Credentials, then OAuth client ID of type "Web application". Authorized redirect URI: <code id="sRedirect"></code></div>
+    <div class="row"><div><label>Client ID</label><input id="sGid"></div><div><label>Client secret</label><input id="sGsec" type="password"></div></div>
+    <div class="btns"><button class="btn" id="sGsave">Save (encrypted in this browser)</button></div><div id="sGmsg"></div>
+  </div>
+  <div class="card">
+    <h3>Local Audio Bridge</h3>
+    <div class="mute">Run <b>tools/Start-Audio-Bridge.bat</b> on your PC. It downloads the reference audio on your home internet, so no bot blocks.</div>
+    <div class="btns"><button class="btn sec" id="sBridge">Test bridge</button><span id="sBridgeMsg" class="mute"></span></div>
+  </div>
+  <div class="card">
+    <h3>YouTube cookies (optional)</h3>
+    <div class="mute">Only needed if the cloud should download reference audio or video itself. Use cookies.txt exported from your browser. It is saved as an encrypted GitHub secret.</div>
+    <label>cookies.txt</label><input type="file" id="sCk" accept=".txt">
+    <div class="btns"><button class="btn sec" id="sCkBtn">Save as secret</button><span id="sCkMsg" class="mute"></span></div>
+  </div>
+  <div class="card">
+    <h3>Profile</h3>
+    <label>Update cloud access token</label><input id="sTok" type="password" placeholder="github_pat_...">
+    <div class="btns"><button class="btn sec" id="sTokBtn">Save token</button><button class="btn sec" id="sDelProfile">Delete this profile from this browser</button></div><div id="sTokMsg"></div>
+  </div>
+</section>
+</main>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const BRIDGE="http://127.0.0.1:7871", WF="produce.yml";
+let S=null, PIN=null, D={channels:[],queue:[],state:{channels:{},items:{}},runs:[]}, BRANCH="main";
+const msg=(el,t,err)=>{$(el).innerHTML=t?`<div class="msg ${err?"err":""}">${esc(t)}</div>`:""};
+const when=s=>s?new Date(s).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}):"";
+const rid=()=>[...crypto.getRandomValues(new Uint8Array(6))].map(b=>b.toString(16).padStart(2,"0")).join("");
+
+/* ---------- profiles: encrypted in this browser (PBKDF2 + AES-GCM) ---------- */
+const store={get(){try{return JSON.parse(localStorage.getItem("fleet_profiles")||"{}")}catch(e){return{}}},set(p){try{localStorage.setItem("fleet_profiles",JSON.stringify(p))}catch(e){}}};
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))), unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function keyFor(pin,salt){const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pin),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:250000,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function seal(pin,obj){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},await keyFor(pin,salt),new TextEncoder().encode(JSON.stringify(obj)));return{salt:b64(salt),iv:b64(iv),ct:b64(ct)}}
+async function unseal(pin,e){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(e.iv)},await keyFor(pin,unb64(e.salt)),unb64(e.ct));return JSON.parse(new TextDecoder().decode(pt))}
+async function saveProfile(){const p=store.get();p[S.user]=await seal(PIN,S);store.set(p);try{sessionStorage.setItem("fleet_session",JSON.stringify({S,PIN}))}catch(e){}}
+
+/* ---------- GitHub API ---------- */
+async function gh(path,opt={}){const h={"Authorization":"Bearer "+S.token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",...(opt.headers||{})};
+  const r=await fetch(path.startsWith("http")?path:`https://api.github.com${path}`,{...opt,headers:h,cache:"no-store"});
+  if(r.status===204)return{};const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){j=t}
+  if(!r.ok){const e=new Error((j&&j.message)||("GitHub error "+r.status));e.status=r.status;throw e}return j}
+const R=()=>`/repos/${S.repo}`;
+const u8b64=s=>{const b=new TextEncoder().encode(s);let o="";for(let i=0;i<b.length;i+=32768)o+=String.fromCharCode(...b.subarray(i,i+32768));return btoa(o)};
+const b64u8=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,"")),c=>c.charCodeAt(0)));
+async function getJSON(path,def){try{const j=await gh(`${R()}/contents/${path}?ref=${BRANCH}`);let txt=j.content?b64u8(j.content):"";
+  if(!txt&&j.sha)txt=await gh(`${R()}/contents/${path}?ref=${BRANCH}`,{headers:{Accept:"application/vnd.github.raw"}});
+  return{data:typeof txt==="string"?JSON.parse(txt||"null")??def:txt,sha:j.sha}}catch(e){if(e.status===404)return{data:def,sha:null};throw e}}
+async function putRaw(path,b64content,message,sha){return gh(`${R()}/contents/${path}`,{method:"PUT",body:JSON.stringify({message,content:b64content,branch:BRANCH,...(sha?{sha}:{})})})}
+async function mutate(path,def,fn,message){for(let i=0;i<4;i++){const {data,sha}=await getJSON(path,def);const out=fn(data)??data;
+  try{await putRaw(path,u8b64(JSON.stringify(out,null,1)),message,sha);return out}catch(e){if(e.status!==409&&e.status!==422)throw e;await new Promise(r=>setTimeout(r,700))}}throw new Error("Could not save - try again")}
+function fileB64(f){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(f)})}
+async function putFile(path,file,message){if(file.size>95*1024*1024)throw new Error("File too big (max 95 MB).");
+  let sha=null;try{sha=(await gh(`${R()}/contents/${path}?ref=${BRANCH}`)).sha}catch(e){}
+  await putRaw(path,await fileB64(file),message,sha);return path}
+async function dispatch(inputs){await gh(`${R()}/actions/workflows/${WF}/dispatches`,{method:"POST",body:JSON.stringify({ref:BRANCH,inputs})})}
+let sodiumP=null;
+async function setSecret(name,value){sodiumP=sodiumP||import("https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/+esm").then(async m=>{const s=m.default||m;await s.ready;return s});
+  const so=await sodiumP, k=await gh(`${R()}/actions/secrets/public-key`);
+  const enc=so.to_base64(so.crypto_box_seal(so.from_string(value),so.from_base64(k.key,so.base64_variants.ORIGINAL)),so.base64_variants.ORIGINAL);
+  await gh(`${R()}/actions/secrets/${name}`,{method:"PUT",body:JSON.stringify({encrypted_value:enc,key_id:k.key_id})})}
+
+/* ---------- login ---------- */
+function loginView(){const p=Object.keys(store.get());$("#lu").innerHTML=p.map(u=>`<option>${esc(u)}</option>`).join("");
+  $("#loginForm").classList.toggle("hide",!p.length);$("#newForm").classList.toggle("hide",!!p.length);$("#loginBox").classList.remove("hide");$("#appBox").classList.add("hide")}
+$("#toNew").onclick=()=>{$("#loginForm").classList.add("hide");$("#newForm").classList.remove("hide")};
+$("#toLogin").onclick=()=>loginView();
+$("#loginBtn").onclick=async()=>{try{S=await unseal($("#lp").value,store.get()[$("#lu").value]);PIN=$("#lp").value;await saveProfile();start()}catch(e){msg("#loginMsg","Wrong password / PIN.",1)}};
+$("#lp").onkeydown=e=>{if(e.key==="Enter")$("#loginBtn").click()};
+$("#newBtn").onclick=async()=>{const u=$("#nu").value.trim().toLowerCase(),p=$("#np").value,repo=$("#nrepo").value.trim().replace(/^https:\/\/github.com\//,"").replace(/\/$/,""),tok=$("#ntok").value.trim();
+  if(!/^[a-z0-9_.-]{2,32}$/.test(u)||p.length<4||!/^[\w.-]+\/[\w.-]+$/.test(repo)||!tok)return msg("#loginMsg","Fill username, PIN (4+ characters), repository owner/name and token.",1);
+  S={user:u,role:$("#nr").value,repo,token:tok};PIN=p;
+  try{await gh(R());}catch(e){S=null;return msg("#loginMsg","GitHub says: "+e.message+" - check the repository name and token.",1)}
+  await saveProfile();start()};
+$("#logout").onclick=()=>{try{sessionStorage.removeItem("fleet_session")}catch(e){}location.href=location.pathname};
+
+/* ---------- app ---------- */
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("hide",s.id!=="t-"+b.dataset.t))});
+async function start(){$("#loginBox").classList.add("hide");$("#appBox").classList.remove("hide");$("#who").textContent=S.user+(S.role==="admin"?" (admin)":"");
+  $("#sRedirect").textContent=location.origin+location.pathname;$("#sGid").value=S.gid||"";$("#sGsec").value=S.gsec||"";
+  $("#sRepoLink").href=`https://github.com/${S.repo}`;$("#sActLink").href=`https://github.com/${S.repo}/actions`;
+  try{const r=await gh(R());BRANCH=r.default_branch;$("#sRepo").textContent=`Connected to ${S.repo} (${r.private?"private: 2,000 free minutes/month":"public: unlimited free minutes"}).`}
+  catch(e){$("#sRepo").textContent="Cannot reach the repository: "+e.message}
+  await googleReturn();load();setInterval(load,15000)}
+async function load(){try{const [c,q,s,runs]=await Promise.all([getJSON("fleet/channels.json",[]),getJSON("fleet/queue.json",[]),getJSON("fleet/state.json",{channels:{},items:{}}),
+  gh(`${R()}/actions/runs?per_page=25`).catch(()=>({workflow_runs:[]}))]);
+  D={channels:c.data,queue:q.data,state:{channels:{},items:{},...s.data},runs:runs.workflow_runs||[]};draw()}catch(e){msg("#cTopMsg","Loading failed: "+e.message,1)}}
+const mine=()=>D.channels.filter(c=>S.role==="admin"||c.owner===S.user);
+const chanName=id=>(D.channels.find(c=>c.id===id)||{}).name||"?";
+function chanOpts(sel,all){const v=$(sel).value;$(sel).innerHTML=(all?'<option value="">All channels</option>':"")+mine().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");if(v&&[...$(sel).options].some(o=>o.value===v))$(sel).value=v}
+function itemState(x){return D.state.items[x.id]||{}}
+function draw(){
+  ["#pChan","#iChan"].forEach(s=>chanOpts(s));chanOpts("#qChan",1);
+  const ids=new Set(mine().map(c=>c.id)),qc=$("#qChan").value;
+  const q=D.queue.filter(x=>ids.has(x.channel_id)&&(!qc||x.channel_id===qc)&&itemState(x).status!=="done");
+  $("#qBody").innerHTML=q.map((x,i)=>{const st=itemState(x),s=st.status||"queued";return`<tr><td>${i+1}</td>
+    <td>${esc(x.title||x.ref_url||"(audio file)")}<div class="mute">${x.ref_url?`<a href="${esc(x.ref_url)}" target="_blank">${esc(x.video_id||x.ref_url)}</a>`:""} ${x.audio?"· audio ready":"· audio: cloud download"}</div>${st.error?`<div class="mute" style="color:var(--err)">${esc(st.error)}</div>`:""}</td>
+    <td>${esc(chanName(x.channel_id))}</td><td class="mute">${x.aspect}${x.shorts?" + 2 Shorts":""}<br>${x.upload?(x.schedule==="now"?"publish now":x.schedule.replace("auto","")+"h gap"):"no upload"}</td>
+    <td><span class="st ${s}">${s}</span></td>
+    <td style="white-space:nowrap"><button class="btn sm" onclick="runItem('${x.id}')">Run now</button> <button class="btn sec sm" onclick="qTop('${x.id}')">Top</button> <button class="btn sec sm" onclick="qDel('${x.id}')">×</button></td></tr>`}).join("")||`<tr><td colspan=6 class="mute">Queue is empty.</td></tr>`;
+  $("#rList").innerHTML=D.runs.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <span class="st ${r.conclusion||r.status}">${r.conclusion||r.status}</span><b>${esc(r.display_title)}</b><span class="mute">${esc(r.event)} · ${when(r.created_at)}</span><span class="sp"></span><a href="${r.html_url}" target="_blank">Open run / logs</a></div>`).join("")||"No runs yet.";
+  const pubs=Object.entries(D.state.items).filter(([id,v])=>v.youtube&&v.youtube.length&&ids.has((D.queue.find(q=>q.id===id)||{}).channel_id||"")).sort((a,b)=>(b[1].finished||"").localeCompare(a[1].finished||""));
+  $("#pubList").innerHTML=pubs.map(([id,v])=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(v.title)}</b> <span class="mute">${esc(chanName((D.queue.find(q=>q.id===id)||{}).channel_id))}</span><div class="mute">${v.youtube.map(y=>`${esc(y.kind)}: <a href="https://youtu.be/${y.id}" target="_blank">youtu.be/${y.id}</a> ${y.publish?"· goes public "+when(y.publish):"· public"}`).join("<br>")}</div></div>`).join("")||"Nothing published yet.";
+  $("#cList").innerHTML=mine().map(c=>{const cs=D.state.channels[c.id]||{};return`<div class="chan" style="padding:12px 0;border-bottom:1px solid var(--line)">
+    <div class="av" style="${c.avatar?`background-image:url(https://raw.githubusercontent.com/${S.repo}/${BRANCH}/${c.avatar}?${c.avv||""})`:""}"></div>
+    <div style="flex:1;min-width:220px"><b>${esc(c.name)}</b> <span class="mute">· ${esc(c.speaker)} · Every ${c.schedule.replace("auto","")/24} Days (${c.schedule.replace("auto","")}h) · owner ${esc(c.owner)}</span>
+      <div class="mute">${c.yt_title?`YouTube: <b style="color:var(--ok)">${esc(c.yt_title)}</b>`:`<span style="color:var(--acc2)">YouTube not connected</span>`}${cs.last_slot?` · last scheduled ${when(cs.last_slot)}`:""}${cs.import_msg?`<br>${esc(cs.import_msg)}`:""}</div></div>
+    <label class="chk" style="margin:0"><input type="checkbox" ${c.autopilot?"checked":""} onchange="setAuto('${c.id}',this.checked)">Autopilot</label>
+    <button class="btn sm" onclick="connectYT('${c.id}')">${c.yt_title?"Reconnect":"Connect YouTube"}</button>
+    <button class="btn sec sm" onclick="editC('${c.id}')">Edit</button><button class="btn sec sm" onclick="delC('${c.id}')">×</button></div>`}).join("")||'<div class="mute">No channels yet - add one below.</div>';
+}
+async function busy(btn,fn){const b=typeof btn==="string"?$(btn):btn;if(b)b.disabled=true;try{return await fn()}finally{if(b)b.disabled=false}}
+
+/* produce */
+let bridgeAudio=null;
+async function produce(now_){const btn=now_?"#pGo":"#pAdd";await busy(btn,async()=>{try{
+  const cid=$("#pChan").value;if(!cid)throw new Error("Add a channel first (Channels tab).");
+  const url=$("#pUrl").value.trim(),vid=(url.match(/(?:v=|youtu\.be\/|shorts\/|live\/)([\w-]{11})/)||[])[1]||null,id=rid();
+  const audio=$("#pAudio").files[0]||bridgeAudio;if(!url&&!audio)throw new Error("Give a reference URL or an audio file.");
+  msg("#pMsg","Uploading files to the cloud...");
+  const it={id,channel_id:cid,ref_url:url,video_id:vid,title:$("#pTitle").value.trim(),aspect:$("#pAspect").value,background:$("#pBg").value,
+    shorts:$("#pShorts").checked,upload:$("#pUpload").checked,schedule:$("#pSched").value,created:new Date().toISOString(),by:S.user};
+  const ext=f=>(f.name.match(/\.\w+$/)||[".bin"])[0].toLowerCase();
+  if(audio)it.audio=await putFile(`inbox/${id}-audio${ext(audio)}`,audio,`audio for ${id}`);
+  if($("#pThumb").files[0])it.thumb=await putFile(`inbox/${id}-thumb${ext($("#pThumb").files[0])}`,$("#pThumb").files[0],`thumbnail for ${id}`);
+  if($("#pSpeaker").files[0])it.speaker=await putFile(`inbox/${id}-speaker${ext($("#pSpeaker").files[0])}`,$("#pSpeaker").files[0],`speaker for ${id}`);
+  await mutate("fleet/queue.json",[],q=>{now_?q.unshift(it):q.push(it)},`queue ${id}`);
+  if(now_)await dispatch({mode:"produce",item:id,title:(it.title||vid||id).slice(0,80)});
+  msg("#pMsg",now_?"Started in the cloud. Watch it in Cloud runs (about 3-10 minutes).":"Added to the queue.");
+  ["#pUrl","#pTitle"].forEach(s=>$(s).value="");["#pAudio","#pThumb","#pSpeaker"].forEach(s=>$(s).value="");bridgeAudio=null;$("#pBridgeMsg").textContent="";load()}
+  catch(e){msg("#pMsg",e.message,1)}})}
+$("#pGo").onclick=()=>produce(1);$("#pAdd").onclick=()=>produce(0);
+$("#pChan").onchange=()=>{const c=D.channels.find(x=>x.id===$("#pChan").value);if(c){$("#pAspect").value=c.aspect||"16:9";$("#pSched").value=c.schedule;$("#pShorts").checked=!!c.shorts}};
+async function bridgeGet(url){const r=await fetch(`${BRIDGE}/audio?url=${encodeURIComponent(url)}`);if(!r.ok)throw new Error(await r.text()||"bridge error");
+  const name=(r.headers.get("X-Filename")||"audio.m4a");return new File([await r.blob()],name)}
+$("#pBridge").onclick=e=>busy(e.target,async()=>{const u=$("#pUrl").value.trim();if(!u)return $("#pBridgeMsg").textContent="Paste the reference URL first.";
+  $("#pBridgeMsg").textContent="Downloading on your PC...";try{bridgeAudio=await bridgeGet(u);$("#pBridgeMsg").textContent=`✓ ${(bridgeAudio.size/1048576).toFixed(1)} MB audio ready`}
+  catch(err){$("#pBridgeMsg").textContent="Bridge not reachable - run tools/Start-Audio-Bridge.bat ("+err.message+")"}});
+
+/* import */
+$("#iChan").onchange=()=>{const c=D.channels.find(x=>x.id===$("#iChan").value);if(c&&c.reference)$("#iHandle").value=c.reference};
+$("#iGo").onclick=e=>busy(e.target,async()=>{try{const c=D.channels.find(x=>x.id===$("#iChan").value);if(!c)throw new Error("Add a channel first.");
+  if(!c.yt_title)throw new Error("Connect YouTube for this channel first (the cloud reads the channel list with it).");
+  const h=$("#iHandle").value.trim()||c.reference;if(!h)throw new Error("Type the reference channel.");
+  await dispatch({mode:"import",channel:c.id,handle:h,title:`${c.name} <- ${h}`.slice(0,80)});msg("#iMsg","Import started in the cloud. The queue fills in about 1 minute.")}catch(err){msg("#iMsg",err.message,1)}});
+
+/* queue */
+$("#qChan").onchange=draw;
+window.runItem=id=>busy(null,async()=>{try{const it=D.queue.find(x=>x.id===id);
+  if(D.state.items[id]&&D.state.items[id].status!=="done")await mutate("fleet/state.json",{channels:{},items:{}},s=>{delete s.items[id]},`retry ${id}`);
+  await dispatch({mode:"produce",item:id,title:(it.title||it.video_id||id).slice(0,80)});$("#qMsg").textContent="Started - see Cloud runs."}catch(e){$("#qMsg").textContent=e.message}});
+window.qTop=id=>busy(null,async()=>{await mutate("fleet/queue.json",[],q=>{const i=q.findIndex(x=>x.id===id);if(i>0)q.unshift(...q.splice(i,1))},`move ${id} to top`);load()});
+window.qDel=id=>busy(null,async()=>{await mutate("fleet/queue.json",[],q=>q.filter(x=>x.id!==id),`remove ${id}`);load()});
+$("#qAuto").onclick=e=>busy(e.target,async()=>{try{await dispatch({mode:"autopilot",title:"manual autopilot"});$("#qMsg").textContent="Autopilot started - see Cloud runs."}catch(err){$("#qMsg").textContent=err.message}});
+$("#qBridge").onclick=e=>busy(e.target,async()=>{const ids=new Set(mine().map(c=>c.id));const todo=D.queue.filter(x=>ids.has(x.channel_id)&&!x.audio&&x.ref_url&&itemState(x).status!=="done");
+  let n=0;for(const x of todo){$("#qMsg").textContent=`Audio ${n+1}/${todo.length}: ${x.title||x.video_id}...`;
+    try{const f=await bridgeGet(x.ref_url);const p=await putFile(`inbox/${x.id}-audio${(f.name.match(/\.\w+$/)||[".m4a"])[0]}`,f,`audio for ${x.id}`);
+      await mutate("fleet/queue.json",[],q=>{const i=q.find(y=>y.id===x.id);if(i)i.audio=p},`audio ready ${x.id}`);n++}
+    catch(err){$("#qMsg").textContent="Stopped: "+err.message+" (is tools/Start-Audio-Bridge.bat running?)";load();return}}
+  $("#qMsg").textContent=`Done - ${n} audio files sent to the cloud.`;load()});
+
+/* channels */
+window.setAuto=(id,on)=>busy(null,async()=>{await mutate("fleet/channels.json",[],cs=>{const c=cs.find(x=>x.id===id);if(c)c.autopilot=on},`autopilot ${on?"on":"off"} ${id}`);load()});
+window.editC=id=>{const c=D.channels.find(x=>x.id===id);$("#cFormTitle").textContent="Edit channel";$("#cId").value=c.id;$("#cName").value=c.name;$("#cSpeaker").value=c.speaker||"";
+  $("#cRef").value=c.reference||"";$("#cSched").value=c.schedule;$("#cAspect").value=c.aspect||"16:9";$("#cCredit").value=c.credit||"";$("#cShorts").checked=!!c.shorts;$("#cOwner").value=c.owner||"";$("#cName").focus()};
+window.delC=id=>busy(null,async()=>{if(!confirm("Delete this channel and its queue?"))return;await mutate("fleet/channels.json",[],cs=>cs.filter(x=>x.id!==id),`delete channel ${id}`);
+  await mutate("fleet/queue.json",[],q=>q.filter(x=>x.channel_id!==id),`clear queue of ${id}`);load()});
+$("#cNew").onclick=()=>{$("#cFormTitle").textContent="Add channel";["#cId","#cName","#cSpeaker","#cRef","#cCredit","#cOwner"].forEach(s=>$(s).value="");$("#cAvatar").value=""};
+$("#cSave").onclick=e=>busy(e.target,async()=>{try{const id=$("#cId").value||rid();let avatar=null;
+  if($("#cAvatar").files[0])avatar=await putFile(`assets/${id}.png`,$("#cAvatar").files[0],`avatar for ${id}`);
+  await mutate("fleet/channels.json",[],cs=>{let c=cs.find(x=>x.id===id);if(!c){c={id,autopilot:false};cs.push(c)}
+    Object.assign(c,{name:$("#cName").value.trim()||"My channel",speaker:$("#cSpeaker").value.trim(),reference:$("#cRef").value.trim(),schedule:$("#cSched").value,
+      aspect:$("#cAspect").value,credit:$("#cCredit").value.trim(),shorts:$("#cShorts").checked,owner:$("#cOwner").value.trim().toLowerCase()||S.user});
+    if(avatar){c.avatar=avatar;c.avv=Date.now()}},`save channel ${id}`);$("#cId").value=id;msg("#cMsg","Saved.");load()}catch(err){msg("#cMsg",err.message,1)}});
+
+/* Google sign-in -> refresh token -> encrypted GitHub secret YT_TOKEN_<CHANNEL> */
+const SCOPES="https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly";
+window.connectYT=id=>{if(!S.gid||!S.gsec)return msg("#cTopMsg","First save the Google OAuth client in Settings.",1);
+  const st=rid();try{sessionStorage.setItem("fleet_oauth",JSON.stringify({st,id}))}catch(e){}
+  location.href="https://accounts.google.com/o/oauth2/v2/auth?"+new URLSearchParams({client_id:S.gid,redirect_uri:location.origin+location.pathname,response_type:"code",
+    scope:SCOPES,access_type:"offline",prompt:"consent select_account",include_granted_scopes:"true",state:st})};
+async function googleReturn(){const p=new URLSearchParams(location.search);if(!p.get("code")&&!p.get("error"))return;
+  history.replaceState(null,"",location.pathname);let pend={};try{pend=JSON.parse(sessionStorage.getItem("fleet_oauth")||"{}")}catch(e){}
+  $("#nav button[data-t=channels]").click();
+  if(p.get("error")||p.get("state")!==pend.st)return msg("#cTopMsg","Google sign-in cancelled.",1);
+  try{msg("#cTopMsg","Connecting YouTube...");
+    const r=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({code:p.get("code"),client_id:S.gid,client_secret:S.gsec,redirect_uri:location.origin+location.pathname,grant_type:"authorization_code"})});
+    const t=await r.json();if(!t.refresh_token)throw new Error(t.error_description||t.error||"Google gave no refresh token - remove the app at myaccount.google.com/permissions and try again");
+    const me=await (await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",{headers:{Authorization:"Bearer "+t.access_token}})).json();
+    const title=(((me.items||[])[0]||{}).snippet||{}).title;if(!title)throw new Error("This Google account has no YouTube channel.");
+    await setSecret("YT_TOKEN_"+pend.id.toUpperCase(),JSON.stringify({type:"authorized_user",client_id:S.gid,client_secret:S.gsec,refresh_token:t.refresh_token}));
+    await mutate("fleet/channels.json",[],cs=>{const c=cs.find(x=>x.id===pend.id);if(c)c.yt_title=title},`connect YouTube ${pend.id}`);
+    msg("#cTopMsg",`Connected to YouTube channel "${title}". The token is stored as an encrypted GitHub secret.`);load()}
+  catch(e){msg("#cTopMsg","YouTube connect failed: "+e.message,1)}}
+
+/* settings */
+$("#sGsave").onclick=async()=>{S.gid=$("#sGid").value.trim();S.gsec=$("#sGsec").value.trim();await saveProfile();msg("#sGmsg","Saved.")};
+$("#sBridge").onclick=async()=>{try{const r=await fetch(BRIDGE+"/ping");$("#sBridgeMsg").textContent=r.ok?"✓ Bridge is running":"Bridge error"}catch(e){$("#sBridgeMsg").textContent="Not running - start tools/Start-Audio-Bridge.bat"}};
+$("#sCkBtn").onclick=e=>busy(e.target,async()=>{const f=$("#sCk").files[0];if(!f)return;try{await setSecret("YT_COOKIES",await f.text());$("#sCkMsg").textContent="✓ Saved as secret YT_COOKIES"}catch(err){$("#sCkMsg").textContent=err.message}});
+$("#sTokBtn").onclick=async()=>{const t=$("#sTok").value.trim();if(!t)return;const old=S.token;S.token=t;try{await gh(R());await saveProfile();$("#sTok").value="";msg("#sTokMsg","Token saved.")}catch(e){S.token=old;msg("#sTokMsg","Token not accepted: "+e.message,1)}};
+$("#sDelProfile").onclick=()=>{if(!confirm("Remove this profile from this browser? (The repository is not touched.)"))return;const p=store.get();delete p[S.user];store.set(p);$("#logout").click()};
+
+/* boot: keep the session for this tab (needed when Google sends you back) */
+(()=>{try{const s=JSON.parse(sessionStorage.getItem("fleet_session")||"null");if(s){S=s.S;PIN=s.PIN;return start()}}catch(e){}loginView()})();
+</script>
+</body>
+</html>
