@@ -14,6 +14,7 @@ import random
 import re
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 
 import numpy as np
@@ -29,10 +30,24 @@ JUNK = re.compile(r"\b(logo|icon|signature|map of|diagram|chart|flag of|coat of 
                   r"screenshot|svg|seal of|emblem)\b", re.I)
 
 
+_LAST = {"t": 0.0}
+
+
 def _get(url, timeout=25):
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8", "replace"))
+    """JSON GET, paced (Wikimedia asks for <= ~1 request/second) and retried when told to slow down (429)."""
+    for n in range(5):
+        wait = 1.1 - (time.time() - _LAST["t"])
+        if wait > 0 and ("wikimedia.org" in url or "wikipedia.org" in url):
+            time.sleep(max(0.0, wait))
+        _LAST["t"] = time.time()
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode("utf-8", "replace"))
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 503) or n == 4:
+                raise
+            time.sleep(min(40, int(e.headers.get("Retry-After") or 0) or 5 * (n + 1)))
 
 
 def _clean_html(s):
@@ -60,14 +75,13 @@ class Sources:
                   "iiprop": "url|mime|size|extmetadata", "iiurlwidth": "1920",
                   "iiextmetadatafilter": "ImageDescription|DateTimeOriginal|ObjectName|Artist|LicenseShortName|Categories"}
         out = []
+        j = {}
         for host in ("https://commons.wikimedia.org/w/api.php", "https://en.wikipedia.org/w/api.php"):
             try:
                 j = _get(host + "?" + urllib.parse.urlencode(params))
                 break
             except Exception as e:                       # noqa: BLE001
-                j = {}
                 self.log(f"  commons '{query}': {str(e)[:80]}")
-                time.sleep(2)
         for p in (j.get("query", {}).get("pages", {}) or {}).values():
             ii = (p.get("imageinfo") or [{}])[0]
             md = ii.get("extmetadata") or {}
@@ -182,8 +196,8 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         if name in pools:
             return pools[name]
         c = []
-        for q in (name, f"{name} portrait", f"{name} photograph", f"{name} concert", f"{name} interview"):
-            c += [x for x in src.commons(q, "image") if _names_in(x["text"], names)]
+        for q in (name, f"{name} portrait", f"{name} performing"):
+            c += [x for x in src.commons(q, "image", 50) if _names_in(x["text"], names)]
         c += [x for x in src.commons(name, "video") if _names_in(x["text"], names)]
         c += [x for x in src.openverse(name) if _names_in(x["text"], names)]
         uniq = {x["id"]: x for x in c}
@@ -220,13 +234,19 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
             continue
         emb = m.images(cands)
         q_emb = m.text([x for x in (p.get("archive"), p.get("stock")) if x] or [s["text"]])
+        no_pic = [c for c in cands if emb.get(c["id"]) is None]
+        txt_emb = dict(zip([c["id"] for c in no_pic], m.text([c["text"][:200] for c in no_pic]))) if no_pic else {}
         year = p.get("year")
         best, best_sc = None, -9
         for c in cands:
             e = emb.get(c["id"])
-            if e is None:
+            if e is not None:
+                sc = 0.55 * float(e @ sent_emb[i]) + 0.30 * float(np.max(q_emb @ e))
+            elif c["id"] in txt_emb:                      # film without a preview frame: judge its title/description
+                t = txt_emb[c["id"]]
+                sc = 0.40 * float(t @ sent_emb[i]) + 0.30 * float(np.max(q_emb @ t)) - 0.05
+            else:
                 continue
-            sc = 0.55 * float(e @ sent_emb[i]) + 0.30 * float(np.max(q_emb @ e))
             if names and _names_in(c["text"], names):
                 sc += 0.08                                # really shows the person named in the sentence
             if year and c.get("year"):
@@ -235,7 +255,7 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
             if c["source"] != "pexels" and (names or p.get("archive")):
                 sc += 0.02                                # real archive over stock for named things
             sc += 0.01 if c["kind"] == "video" else 0
-            sc -= 0.03 * used.get(c["id"], 0) + (0.10 if c["id"] == prev else 0)
+            sc -= 0.09 * used.get(c["id"], 0) + (0.20 if c["id"] == prev else 0)   # avoid repeating a picture
             if sc > best_sc:
                 best, best_sc = c, sc
         c = best or cands[0]

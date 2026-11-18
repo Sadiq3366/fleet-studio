@@ -8,6 +8,10 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
+import threading
+
+_WM = threading.BoundedSemaphore(3)
+_ANY = threading.BoundedSemaphore(16)
 
 
 class Matcher:
@@ -37,15 +41,26 @@ class Matcher:
 
     @staticmethod
     def _get(url):
+        """Small preview image. Wikimedia previews: at most 3 at a time, and wait when it says 429."""
+        import time
+        import urllib.error
         from PIL import Image
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "fleet-studio/1.0"})
-            with urllib.request.urlopen(req, timeout=20) as r:
-                im = Image.open(io.BytesIO(r.read())).convert("RGB")
-            im.thumbnail((336, 336))
-            return im
-        except Exception:                                  # noqa: BLE001
-            return None
+        wm = "wikimedia.org" in url
+        for n in range(4):
+            try:
+                with (_WM if wm else _ANY):
+                    req = urllib.request.Request(url, headers={"User-Agent": "FleetStudio/1.0 (open-source documentary video tool)"})
+                    with urllib.request.urlopen(req, timeout=20) as r:
+                        im = Image.open(io.BytesIO(r.read())).convert("RGB")
+                im.thumbnail((336, 336))
+                return im
+            except urllib.error.HTTPError as e:
+                if e.code != 429:
+                    return None
+                time.sleep(3 * (n + 1))
+            except Exception:                              # noqa: BLE001
+                return None
+        return None
 
     def images(self, vids):
         """Embedding per video id (average of its preview frames). Cached."""

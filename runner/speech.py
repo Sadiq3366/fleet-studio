@@ -51,6 +51,7 @@ def _groq(audio, duration, key, log):
             while wi < len(words) and words[wi]["s"] < b - 0.01:
                 ws.append(words[wi])
                 wi += 1
+            _punctuate(ws, sg["text"])
             out.append({"start": a, "end": b, "text": sg["text"].strip(), "words": ws})
         if wi < len(words) and out:
             out[-1]["words"] += words[wi:]
@@ -59,6 +60,23 @@ def _groq(audio, duration, key, log):
     lang = names.get((lang or "").lower(), (lang or "")[:2].lower() or None)
     log(f"  language: {lang}, {len(out)} sentences")
     return out, lang
+
+
+def _norm(w):
+    return re.sub(r"[^\w]", "", w.lower())
+
+
+def _punctuate(words, text):
+    """Groq's word list has no punctuation; copy it from the segment text so sentences can be found."""
+    toks = text.split()
+    j = 0
+    for w in words:
+        k = j
+        while k < len(toks) and k < j + 4 and _norm(toks[k]) != _norm(w["w"]):
+            k += 1
+        if k < len(toks) and _norm(toks[k]) == _norm(w["w"]):
+            w["w"] = toks[k]
+            j = k + 1
 
 
 def _local(audio, duration, log):
@@ -90,25 +108,34 @@ END = (".", "?", "!", "…", "。", "؟", "।")
 
 
 def sentences(segments):
-    """Whisper segments can hold 2-3 sentences -> split them at . ? ! using the exact word times."""
-    out = []
+    """Real sentences (split at . ? ! using exact word times), even when one sentence is spread over 2 segments.
+    Without any punctuation (some languages/engines), long runs are cut at the longest pause instead."""
+    out, cur = [], []
+
+    def flush():
+        if cur:
+            out.append({"start": cur[0]["s"], "end": cur[-1]["e"], "text": " ".join(x["w"] for x in cur), "words": list(cur)})
+            cur.clear()
+
     for seg in segments:
         ws = seg.get("words") or []
         if not ws:
+            flush()
             out.append(dict(seg))
             continue
-        cur = []
         for w in ws:
+            if cur and len(cur) >= 30:                     # no full stop for a long time -> cut at the biggest pause
+                gaps = [(cur[k + 1]["s"] - cur[k]["e"], k) for k in range(8, len(cur) - 4)]
+                if gaps:
+                    k = max(gaps)[1]
+                    rest = cur[k + 1:]
+                    del cur[k + 1:]
+                    flush()
+                    cur.extend(rest)
             cur.append(w)
             if w["w"].endswith(END) and len(cur) >= 3:
-                out.append({"start": cur[0]["s"], "end": cur[-1]["e"], "text": " ".join(x["w"] for x in cur), "words": cur})
-                cur = []
-        if cur:
-            if out and len(cur) < 3 and out[-1]["words"] and out[-1]["words"][-1] in ws:   # tiny tail -> previous
-                out[-1]["words"] += cur
-                out[-1].update(end=cur[-1]["e"], text=out[-1]["text"] + " " + " ".join(x["w"] for x in cur))
-            else:
-                out.append({"start": cur[0]["s"], "end": cur[-1]["e"], "text": " ".join(x["w"] for x in cur), "words": cur})
+                flush()
+    flush()
     return out
 
 
