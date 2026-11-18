@@ -356,6 +356,13 @@ def thumbnail_v2(work, text, avatar=None, name=None, out=None, log=print, seed="
         col_w = W - col_x - 34
         n = max(2, min(6, -(-len(words) // 2)))        # about 2 words per line -> big letters
         lines = _lines(words, min(n, len(words)))
+        for k in range(len(lines) - 1, 0, -1):           # no line that is only a tiny word ("QUE", "DE", "LA")
+            if len(lines[k]) == 1 and len(lines[k][0]) <= 3:
+                lines[k - 1] = lines[k - 1] + lines[k]
+                lines.pop(k)
+            elif len(lines[k - 1]) == 1 and len(lines[k - 1][0]) <= 3:
+                lines[k] = lines[k - 1] + lines[k]
+                lines.pop(k - 1)
         styles = ["white", "yellowbar", "white", "redbar", "yellow", "white"]
         # every line as big as the column allows (like the reference), then all scaled to fit the height
         sizes = []
@@ -364,6 +371,8 @@ def thumbnail_v2(work, text, avatar=None, name=None, out=None, log=print, seed="
             while s < 190 and d.textlength(t, font=_font(s + 4)) <= col_w - 24:
                 s += 4
             sizes.append(s)
+        med = sorted(sizes)[len(sizes) // 2]
+        sizes = [min(sz, int(med * 1.25)) for sz in sizes]   # a lone short word must not become huge
         gap = 10
         total = sum(sizes) * 1.04 + gap * (len(lines) - 1)
         avail = H - 40 - name_h - 20
