@@ -1,1 +1,16 @@
-[]
+[
+ {
+  "id": "5bb9f4ab5ef1",
+  "autopilot": false,
+  "name": "El Éxito con Tracy",
+  "speaker": "walter riso",
+  "reference": "",
+  "schedule": "auto48",
+  "aspect": "16:9",
+  "credit": "",
+  "shorts": true,
+  "owner": "sadiqali",
+  "avatar": "assets/5bb9f4ab5ef1.png",
+  "avv": 1794978473984
+ }
+]
