@@ -12,36 +12,73 @@ def transcribe(audio, duration, log=print, groq_key=None):
     return _local(audio, duration, log)
 
 
-def _groq(audio, duration, key, log):
-    """Whisper large-v3-turbo on Groq (free key): ~20 s for 20 min of audio. Sent in 20-minute pieces."""
+def _groq_send(path, key, model):
     import json
-    import subprocess
-    import tempfile
+    import urllib.error
     import urllib.request
     import uuid
+    bnd = uuid.uuid4().hex
+    fields = [("model", model), ("response_format", "verbose_json"),
+              ("timestamp_granularities[]", "word"), ("timestamp_granularities[]", "segment"), ("temperature", "0")]
+    body = b"".join(f'--{bnd}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode() for k, v in fields)
+    with open(path, "rb") as f:
+        body += (f'--{bnd}\r\nContent-Disposition: form-data; name="file"; filename="a.mp3"\r\n'
+                 f'Content-Type: audio/mpeg\r\n\r\n').encode() + f.read() + f"\r\n--{bnd}--\r\n".encode()
+    req = urllib.request.Request("https://api.groq.com/openai/v1/audio/transcriptions", data=body, method="POST",
+                                 headers={"Authorization": f"Bearer {key}", "User-Agent": "fleet-studio/1.0",
+                                          "Content-Type": f"multipart/form-data; boundary={bnd}"})
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:            # keep Groq's own explanation for the log
+        raise RuntimeError(f"HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:300]}") from None
+
+
+def _groq(audio, duration, key, log):
+    """Whisper large-v3-turbo on Groq (free key): ~30 s for 45 min of audio. Sent in pieces; a refused piece is
+    retried smaller and with the second Whisper model."""
+    import subprocess
+    import tempfile
+    import time
 
     import render
     log(f"speech to text (Groq whisper-large-v3-turbo, {duration / 60:.1f} min audio)...")
-    piece, out, lang = 20 * 60, [], None
     tmp = tempfile.mkdtemp()
-    for n, t0 in enumerate(range(0, int(duration) + 1, piece)):
-        if duration - t0 < 0.5:
-            break
-        p = os.path.join(tmp, f"p{n}.mp3")                 # small mono file (Groq free limit is 25 MB)
-        subprocess.run([render.FFMPEG, "-v", "error", "-y", "-ss", str(t0), "-t", str(piece), "-i", audio,
-                        "-ac", "1", "-ar", "16000", "-b:a", "48k", p], check=True)
-        bnd = uuid.uuid4().hex
-        fields = [("model", "whisper-large-v3-turbo"), ("response_format", "verbose_json"),
-                  ("timestamp_granularities[]", "word"), ("timestamp_granularities[]", "segment"), ("temperature", "0")]
-        body = b"".join(f'--{bnd}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode() for k, v in fields)
-        with open(p, "rb") as f:
-            body += (f'--{bnd}\r\nContent-Disposition: form-data; name="file"; filename="a.mp3"\r\n'
-                     f'Content-Type: audio/mpeg\r\n\r\n').encode() + f.read() + f"\r\n--{bnd}--\r\n".encode()
-        req = urllib.request.Request("https://api.groq.com/openai/v1/audio/transcriptions", data=body, method="POST",
-                                     headers={"Authorization": f"Bearer {key}", "User-Agent": "fleet-studio/1.0",
-                                              "Content-Type": f"multipart/form-data; boundary={bnd}"})
-        with urllib.request.urlopen(req, timeout=300) as r:
-            j = json.loads(r.read())
+    out, lang = [], None
+
+    def cut(t0, length, name):
+        p = os.path.join(tmp, name)
+        # -vn / -map_metadata -1: no cover picture or tags in the piece (Groq refuses mp3 files with pictures)
+        subprocess.run([render.FFMPEG, "-v", "error", "-y", "-ss", str(t0), "-t", str(length), "-i", audio,
+                        "-vn", "-map_metadata", "-1", "-ac", "1", "-ar", "16000", "-b:a", "48k", p], check=True)
+        return p
+
+    def piece(t0, length, depth=0):
+        p = cut(t0, length, f"p{int(t0)}_{int(length)}.mp3")
+        err = None
+        for model in ("whisper-large-v3-turbo", "whisper-large-v3"):
+            for n in range(3):
+                try:
+                    return [(t0, _groq_send(p, key, model))]
+                except RuntimeError as e:
+                    err = str(e)
+                    if "HTTP 429" in err:                 # free limit per minute -> wait and retry
+                        time.sleep(20 * (n + 1))
+                        continue
+                    break
+        if length > 300 and depth < 2:                  # refused -> send it in smaller pieces
+            log(f"  Groq refused a {length / 60:.0f}-min piece ({err[:160]}) - sending smaller pieces")
+            half = length / 2
+            return piece(t0, half, depth + 1) + piece(t0 + half, length - half, depth + 1)
+        raise RuntimeError(err or "Groq failed")
+
+    results = []
+    step = 20 * 60
+    t = 0.0
+    while duration - t > 0.5:
+        results += piece(t, min(step, duration - t))
+        t += step
+    for t0, j in results:
         lang = lang or j.get("language")
         words = [{"w": w["word"].strip(), "s": w["start"] + t0, "e": w["end"] + t0} for w in j.get("words", []) if w["word"].strip()]
         wi = 0
