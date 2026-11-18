@@ -30,8 +30,8 @@ jobs:
         with:
           path: |
             ~/.cache/huggingface
-            ~/.u2net
-          key: ai-models-v3
+            ~/.rembg
+          key: ai-models-v4
       - name: Install ffmpeg + font + libraries
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null

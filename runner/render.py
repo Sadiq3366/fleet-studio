@@ -211,29 +211,30 @@ def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=
             d0.rounded_rectangle(bx, radius=16, fill=(225, 25, 45), outline=(255, 255, 255), width=4)
             d0.text((cx - tw / 2, bx[1] + 8), label, font=nf, fill=(255, 255, 255))
 
-    words = re.sub(r"[#\"“”]", "", text or "").upper().split()[:7]
+    text = re.sub(r"[^\w\s¿?¡!.,'’-]", " ", text or "")      # no emojis / = / symbols on the thumbnail
+    words = text.upper().split()[:7]
     if words:
         d = ImageDraw.Draw(bg)
         clean = lambda w: w.strip(",.!?¡¿:;\"'").upper()
         hl = {clean(x) for h in (highlight or []) for x in str(h).split()} & {clean(w) for w in words}
-        hl = set(sorted(hl, key=len, reverse=True)[:2]) or {clean(max(words, key=lambda w: len(clean(w))))}
+        hl = set(sorted(hl, key=len, reverse=True)[:1]) or {clean(max(words, key=lambda w: len(clean(w))))}
         n = 1 if len(words) <= 2 else 2 if len(words) <= 5 else 3
         lines = _lines(words, n)
         size = 190
         while size > 48:
             f = _font(size)
-            if max(d.textlength(" ".join(l), font=f) for l in lines) <= text_w and len(lines) * size * 1.05 <= H * 0.86:
+            if max(d.textlength(" ".join(l), font=f) for l in lines) <= text_w and len(lines) * size * 1.18 <= H * 0.86:
                 break
             size -= 4
         f = _font(size)
-        y = max(30, (H - len(lines) * size * 1.05) / 2 - 30)
+        y = max(30, (H - len(lines) * size * 1.18) / 2 - 30)
         sw = max(6, size // 10)
         sh = Image.new("L", (W, H), 0)                # soft drop shadow behind the words
         ds = ImageDraw.Draw(sh)
         yy = y
         for l in lines:
             ds.text((52, yy + 8), " ".join(l), font=f, fill=200, stroke_width=sw + 4, stroke_fill=200)
-            yy += size * 1.05
+            yy += size * 1.18
         bg.paste(Image.new("RGB", (W, H)), (0, 0), sh.filter(ImageFilter.GaussianBlur(10)))
         for l in lines:
             x = 46
@@ -246,7 +247,7 @@ def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=
                 else:
                     d.text((x, y), w, font=f, fill=(255, 255, 255), stroke_width=sw, stroke_fill=(0, 0, 0))
                 x += tw + d.textlength(" ", font=f)
-            y += size * 1.05
+            y += size * 1.18
     bg.save(out, "JPEG", quality=92)
     if os.path.getsize(out) > 1_900_000:
         bg.save(out, "JPEG", quality=80)

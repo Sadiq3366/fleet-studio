@@ -17,10 +17,17 @@ def _post(url, body, headers=None, timeout=120):
 
 
 def _gemini(prompt, key):
-    j = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={key}",
-              {"contents": [{"parts": [{"text": prompt}]}],
-               "generationConfig": {"temperature": 0.8, "responseMimeType": "application/json"}})
-    return j["candidates"][0]["content"]["parts"][0]["text"]
+    """Free Gemini; when one model is busy (503) the next one is tried."""
+    err = None
+    for model in dict.fromkeys([GEMINI_MODEL, "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"]):
+        try:
+            j = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}",
+                      {"contents": [{"parts": [{"text": prompt}]}],
+                       "generationConfig": {"temperature": 0.8, "responseMimeType": "application/json"}})
+            return j["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:                       # noqa: BLE001
+            err = e
+    raise err
 
 
 def _pollinations(prompt):
@@ -75,7 +82,8 @@ Return JSON with keys:
 "title": a NEW viral title about the same topic as the reference: curiosity gap or strong emotion, max 60 characters,
    do NOT copy the reference title - use different words and a different angle (no more than 2 words in common),
 "alt_titles": 3 more different viral title options, max 60 characters each,
-"thumbnail_text": 4 to 8 powerful words for the thumbnail (no hashtags, no emojis),
+"thumbnail_text": 3 to 6 powerful words for the thumbnail that create curiosity or emotion (like a shocking
+   statement or a secret), same language, NO symbols, NO numbers, NO emojis, NO hashtags,
 "highlight_words": the 1-2 most powerful words of thumbnail_text,
 "description": 3 short paragraphs (hook, what they will learn, call to subscribe) - no hashtags inside,
 "chapters": list of {{"time":"m:ss","title":"..."}} with first time "0:00", 5-12 chapters, only if length > 3 minutes, else [],
