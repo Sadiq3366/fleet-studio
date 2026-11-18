@@ -1,0 +1,13 @@
+{
+ "sadiqali": {
+  "role": "owner",
+  "sealed": {
+   "salt": "EK3qVcOPOgj4E9y/vAYbtA==",
+   "iv": "UkuWh3qZW5Lt1cQj",
+   "ct": "OlyFRS2ayqDCzXRkNa5uqv/Ob5wDxXpQmlO1MewHX2CXlj5JA/LrT6RYmQrjYnFQ3zlb/5u8Y2hYNgvhPWCdxYVCLyjitGQw9rEwpNpKm+kby0CL7HDOszxtkX2BYE7Ra43JS4Ph2socQ/xotCA2fLGT/6o046owZD/3+goM0n5BNu6iFYOBDYxX0IdnpjN0lpoZW5fW412FyzDDO2N5kZFb/fELG3L5NnTsgAPpesh/jyRJnXRdYue8mjLXzhU7E3Z9ZspMUERscIQPPk+l6mtdqBXFxeAaUE/z5rDEy9DhhtT00NiPr6XJgHhhWsg15oeuQ2xVii+ZgdVtzuidBTj/Y8xp7JdddSVOTq+OY2XIJA0DybzrmFL+ZEgZLL5usJeQHZy/kX/x4uy9LlPxbTyeV3121zgA",
+   "it": 600000
+  },
+  "by": "sadiq",
+  "created": "2026-11-18T04:53:46.525Z"
+ }
+}
