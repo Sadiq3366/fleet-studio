@@ -1,9 +1,10 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-11-18T07:27:00+00:00",
+   "last_slot": "2026-11-20T07:27:00+00:00",
    "slots": [
-    "2026-11-18T07:27:00+00:00"
+    "2026-11-18T07:27:00+00:00",
+    "2026-11-20T07:27:00+00:00"
    ]
   }
  },
@@ -73,6 +74,73 @@
     "  uploaded https://youtu.be/LJyNYG3ALZU (public at 2026-11-18 23:27 UTC)",
     "  upload 78%",
     "  uploaded https://youtu.be/euFpJVdnQMc (public at 2026-11-19 15:27 UTC)"
+   ]
+  },
+  "28128824d807": {
+   "status": "done",
+   "run": "44273616857",
+   "started": "2026-11-18T09:13:23+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "wWq7hSHNsB8",
+     "publish": "2026-11-20T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "rmk_h7-xr-I",
+     "publish": "2026-11-20T23:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "xbA4TDkMDrQ",
+     "publish": "2026-11-21T15:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-18T09:41:14+00:00",
+   "title": "Por qué el silencio cambia todo en una relación | Walter Riso",
+   "log": [
+    "  upload 30%",
+    "  upload 33%",
+    "  upload 35%",
+    "  upload 37%",
+    "  upload 39%",
+    "  upload 41%",
+    "  upload 43%",
+    "  upload 45%",
+    "  upload 47%",
+    "  upload 49%",
+    "  upload 51%",
+    "  upload 53%",
+    "  upload 55%",
+    "  upload 57%",
+    "  upload 59%",
+    "  upload 61%",
+    "  upload 64%",
+    "  upload 66%",
+    "  upload 68%",
+    "  upload 70%",
+    "  upload 72%",
+    "  upload 74%",
+    "  upload 76%",
+    "  upload 78%",
+    "  upload 80%",
+    "  upload 82%",
+    "  upload 84%",
+    "  upload 86%",
+    "  upload 88%",
+    "  upload 90%",
+    "  upload 92%",
+    "  upload 95%",
+    "  upload 97%",
+    "  upload 99%",
+    "  uploaded https://youtu.be/wWq7hSHNsB8 (public at 2026-11-20 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  upload 67%",
+    "  uploaded https://youtu.be/rmk_h7-xr-I (public at 2026-11-20 23:27 UTC)",
+    "  upload 73%",
+    "  uploaded https://youtu.be/xbA4TDkMDrQ (public at 2026-11-21 15:27 UTC)"
    ]
   }
  }
