@@ -304,6 +304,7 @@ def produce(it, c, state):
         style = it.get("style") or c.get("style") or "viral"
         music = repo_file(c.get("music")) if style == "documentary" else None
         portrait, credits = None, []
+        queries, per = None, None
         if style == "documentary":
             avatar = None                                  # documentaries: subtitles only, no avatar
             log(f"== 3. documentary: real archive photos & film for {len(scenes)} sentences")
@@ -347,8 +348,16 @@ def produce(it, c, state):
         shorts = []
         if it.get("shorts"):
             log("== 6. vertical Shorts")
+            # search words per sentence: viral = the clip queries, documentary = the stock words of each sentence
+            sq = queries or ([[x for x in (q.get("stock"), q.get("archive")) if x] for q in per] if per else None)
             for n, (a, b) in enumerate(broll.pick_short_windows(segments, total)):
-                shorts.append(broll.compose(work, scenes, segments, audio, os.path.join(work, f"short_{n + 1}.mp4"),
+                sscenes = scenes
+                if px and sq:                         # Shorts get their own VERTICAL HD videos matching each sentence
+                    idx = [k for k, sc in enumerate(scenes) if sc["end"] > a and sc["start"] < b]
+                    sscenes = [dict(scenes[k], clip=None, image=None, pexels=None) for k in idx]
+                    log(f"  short {n + 1}: vertical HD videos for {len(sscenes)} sentences")
+                    broll.plan(sscenes, [sq[k] for k in idx], topic_q, px, "9:16", log)
+                shorts.append(broll.compose(work, sscenes, segments, audio, os.path.join(work, f"short_{n + 1}.mp4"),
                                             "9:16", still, None, a, b, log, tag=f"short{n + 1}", px=px, music=music))   # Shorts: no avatar
         shutil.rmtree(os.path.join(work, "clips"), ignore_errors=True)
 
