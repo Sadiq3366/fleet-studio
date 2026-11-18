@@ -150,7 +150,8 @@ def _palette(img):
     return max(cols, key=lambda c: max(c) - min(c))
 
 
-def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=(), out=None, log=print, name=None):
+def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=(), out=None, log=print, name=None,
+              solid=False):
     """1280x720 viral thumbnail in the style/colours of the reference: photo, avatar with white outline, 4-8 big words."""
     from PIL import ImageEnhance, ImageOps
     W, H = 1280, 720
@@ -163,7 +164,12 @@ def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=
         return im.crop(((im.width - W) // 2, (im.height - H) // 2, (im.width - W) // 2 + W, (im.height - H) // 2 + H))
 
     ref = cover(ref_thumb) if ref_thumb and os.path.isfile(ref_thumb) else None
-    if bg_photo and os.path.isfile(bg_photo):
+    if solid:                                             # clean solid colour, no picture behind the text
+        palette = [(14, 14, 18), (165, 0, 24), (8, 38, 105), (70, 12, 105), (0, 82, 66)]
+        col = palette[sum(map(ord, text or "x")) % len(palette)] if solid is True else solid
+        bg = Image.new("RGB", (W, H), col)
+        ref = None
+    elif bg_photo and os.path.isfile(bg_photo):
         bg = cover(bg_photo)
         if ref is not None:                               # take over the reference colour mood
             bg = Image.blend(bg, Image.new("RGB", (W, H), _palette(ref)), 0.22)
@@ -171,17 +177,18 @@ def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=
         bg = ImageOps.mirror(ref).filter(ImageFilter.GaussianBlur(3))
     else:
         bg = Image.new("RGB", (W, H), (25, 25, 40))
-    bg = ImageEnhance.Color(bg).enhance(1.35)
-    bg = ImageEnhance.Contrast(bg).enhance(1.18)
-    # vignette + dark text side
-    mask = Image.new("L", (W, H), 0)
-    d = ImageDraw.Draw(mask)
-    for x in range(0, W, 4):
-        d.rectangle([x, 0, x + 4, H], fill=int(175 * max(0.0, 1 - x / (W * 0.7))))
-    bg = Image.composite(Image.new("RGB", (W, H)), bg, mask)
-    vig = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(vig).ellipse([-W * 0.2, -H * 0.3, W * 1.2, H * 1.3], fill=255)
-    bg = Image.composite(bg, Image.new("RGB", (W, H)), vig.filter(ImageFilter.GaussianBlur(120)))
+    if not solid:
+        bg = ImageEnhance.Color(bg).enhance(1.35)
+        bg = ImageEnhance.Contrast(bg).enhance(1.18)
+        # vignette + dark text side
+        mask = Image.new("L", (W, H), 0)
+        d = ImageDraw.Draw(mask)
+        for x in range(0, W, 4):
+            d.rectangle([x, 0, x + 4, H], fill=int(175 * max(0.0, 1 - x / (W * 0.7))))
+        bg = Image.composite(Image.new("RGB", (W, H)), bg, mask)
+        vig = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(vig).ellipse([-W * 0.2, -H * 0.3, W * 1.2, H * 1.3], fill=255)
+        bg = Image.composite(bg, Image.new("RGB", (W, H)), vig.filter(ImageFilter.GaussianBlur(120)))
 
     text_w = W * 0.92
     if avatar and os.path.isfile(avatar):

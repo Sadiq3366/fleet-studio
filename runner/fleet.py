@@ -325,14 +325,14 @@ def produce(it, c, state):
             if not photo and px:
                 photo = px.photo(topic_q)
             thumb = render.thumbnail(work, meta["thumbnail_text"], photo, ref_th, avatar, meta.get("highlight"), log=log,
-                                     name=(c.get("speaker") or "").strip() or None)
+                                     name=(c.get("speaker") or "").strip() or None, solid=(style != "documentary"))
 
         shorts = []
         if it.get("shorts"):
             log("== 6. vertical Shorts")
             for n, (a, b) in enumerate(broll.pick_short_windows(segments, total)):
                 shorts.append(broll.compose(work, scenes, segments, audio, os.path.join(work, f"short_{n + 1}.mp4"),
-                                            "9:16", still, avatar, a, b, log, tag=f"short{n + 1}", px=px, music=music))
+                                            "9:16", still, None, a, b, log, tag=f"short{n + 1}", px=px, music=music))   # Shorts: no avatar
         shutil.rmtree(os.path.join(work, "clips"), ignore_errors=True)
 
         yt_ids = list(res.get("youtube") or [])            # a retry after the daily limit skips what is already up
