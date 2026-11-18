@@ -31,7 +31,9 @@ BLOCKED = re.compile(r"\b(" + "|".join(re.escape(k) for k in [
     "pedophile", "paedophile", "leaving neverland", "safechuck", "wade robson", "arvizo", "jordan chandler",
     "mugshot", "mug shot", "execution", "executed", "lynching", "suicide"]) + r")\b", re.I)
 JUNK = re.compile(r"\b(logo|icon|signature|map of|diagram|chart|flag of|coat of arms|stamp|coin|poster template|"
-                  r"screenshot|svg|seal of|emblem)\b", re.I)
+                  r"screenshot|svg|seal of|emblem|licen[cs]e|driver|autograph|autographed|passport|certificate|"
+                  r"id card|identity card|document|form|receipt|letter to|tmz|meme|fan art|fanart|cartoon|caricature|"
+                  r"wax figure|wax statue|madame tussaud|lookalike|impersonator)\b", re.I)
 
 
 _LAST = {"t": 0.0}
@@ -244,6 +246,10 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
     if subject and info.get("subject_type", "person") == "person":
         person_pool(subject, aliases)
     sent_emb = m.text([s["text"] or subject for s in scenes])
+    doc_neg = m.text(["a scanned document or form with printed text", "a handwritten signature or autograph on paper",
+                      "an ID card or driver's license", "a screenshot of a website or a newspaper page"])
+    doc_pos = m.text(["a photograph of a person", "a photograph of people at an event", "a photograph of a place or building",
+                      "a photograph of a stage concert"])
     used, prev, lines, scores, credits = {}, None, [], [], {}
     bad, failed, films_off = set(), [0], [False]
     txt_cache = {}
@@ -296,12 +302,8 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         recent = set(recent_ids[-3:])
         cands = [c for c in {c["id"]: c for c in cands}.values()
                  if hd_landscape(c) and not wrong_era(c) and c["id"] not in recent]
-        if names:                                     # about a person: show them - if a photo of the right time exists
-            named = [c for c in cands if _names_in(c["text"], names)]
-            if named:
-                cands = named
-            elif p.get("stock") and px:               # no fitting photo of the person: matching place/event/stock
-                cands += pexels_cands(px, p["stock"], orient)
+        if names and p.get("stock") and px:           # person sentence: their photos compete with matching stock
+            cands += pexels_cands(px, p["stock"], orient)
         if not cands and px:                           # nothing HD of it -> matching HD stock video
             cands = pexels_cands(px, p.get("stock") or info.get("topic_stock") or "documentary", orient)
         if not cands:
@@ -334,7 +336,10 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
             else:
                 continue
             if names and _names_in(c["text"], names):
-                sc += 0.08                                # really shows the person named in the sentence
+                sc += 0.10                                # really shows the person named in the sentence
+            if e is not None:                             # looks like a document / signature / ID card -> reject
+                if float(np.max(doc_neg @ e)) - float(np.max(doc_pos @ e)) > 0:
+                    continue
             if year and c.get("year"):                   # photo from the right time of the story
                 gap = abs(int(year) - c["year"])
                 sc += 0.06 if gap <= 2 else 0.03 if gap <= 6 else -0.06 if gap <= 15 else -0.18
