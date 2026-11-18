@@ -298,6 +298,7 @@ def produce(it, c, state):
             log(f"  subject: {info.get('subject')} ({info.get('subject_type')}, {info.get('years', '')}); "
                 f"other people: {', '.join(info.get('people', [])[:6]) or '-'}")
             per = ai.documentary_scenes(scenes, info, SECRETS, log)
+            os.environ["FLEET_WORK"] = work
             scenes, credits, portrait = documentary.plan(scenes, info, per, px, aspect, log,
                                                          report=os.path.join(work, "clip_matches.txt"))
         elif mode == "pexels" and px:

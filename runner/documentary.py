@@ -72,7 +72,7 @@ class Sources:
         ft = "filetype:bitmap" if kind == "image" else "filetype:video"
         params = {"action": "query", "format": "json", "generator": "search", "gsrnamespace": "6",
                   "gsrsearch": f"{query} {ft}", "gsrlimit": str(limit), "prop": "imageinfo",
-                  "iiprop": "url|mime|size|extmetadata", "iiurlwidth": "1920",
+                  "iiprop": "url|mime|size|extmetadata", "iiurlwidth": "330",
                   "iiextmetadatafilter": "ImageDescription|DateTimeOriginal|ObjectName|Artist|LicenseShortName|Categories"}
         out = []
         j = {}
@@ -100,8 +100,12 @@ class Sources:
             if kind == "image":
                 if mime not in ("image/jpeg", "image/png", "image/webp") or w < 400 or h < 300:
                     continue
-                src = ii.get("thumburl") or ii.get("url")
-                prev = re.sub(r"/\d+px-", "/400px-", src) if "/thumb/" in src else src
+                tu = ii.get("thumburl") or ""
+                if "/thumb/" not in tu or w < 500:
+                    continue
+                sw = next(x for x in (1920, 1280, 960, 500) if w > x)    # Wikimedia only serves standard sizes
+                src = re.sub(r"/\d+px-", f"/{sw}px-", tu)
+                prev = re.sub(r"/\d+px-", "/330px-", tu)
                 out.append({"id": "c" + str(p.get("pageid")), "kind": "image", "src": src, "preview": [prev],
                             "text": text, "year": _year(date) or _year(title), "credit": credit, "w": w, "h": h,
                             "source": "commons"})
@@ -113,7 +117,7 @@ class Sources:
                     continue
                 prev = ii.get("thumburl")
                 out.append({"id": "c" + str(p.get("pageid")), "kind": "video", "src": ii.get("url"),
-                            "preview": [re.sub(r"/\d+px-", "/400px-", prev)] if prev else [], "dur": dur,
+                            "preview": [re.sub(r"/\d+px-", "/330px-", prev)] if prev and "px-" in prev else [], "dur": dur,
                             "text": text, "year": _year(date) or _year(title), "credit": credit, "source": "commons"})
         self.cache[key] = out
         return out
@@ -210,6 +214,26 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         person_pool(subject, aliases)
     sent_emb = m.text([s["text"] or subject for s in scenes])
     used, prev, lines, scores, credits = {}, None, [], [], {}
+    bad, failed = set(), [0]
+    folder = os.path.join(os.environ.get("FLEET_WORK") or ".", "seg_dl", "x")
+
+    def _ready(cand, folder):
+        """Archive media is downloaded now (politely); if Wikimedia refuses, the next candidate is taken."""
+        import broll
+        if cand["source"] == "pexels":
+            return True
+        if cand.get("file"):
+            return True
+        if cand["kind"] == "image":
+            t = {"image": cand["src"]}
+            ok = broll._fetch_image(t, folder)
+            if ok:
+                cand["file"] = t["image_file"]
+            return ok
+        f = broll._wiki_film(cand["src"], folder) if "wikimedia.org" in cand["src"] else None
+        if f:
+            cand["file"] = f
+        return bool(f)
     for i, (s, p) in enumerate(zip(scenes, per)):
         who = (p.get("who") or "").strip()
         is_subject = who and subject and (who.lower() == "subject" or who.lower() == subject.lower())
@@ -237,7 +261,7 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         no_pic = [c for c in cands if emb.get(c["id"]) is None]
         txt_emb = dict(zip([c["id"] for c in no_pic], m.text([c["text"][:200] for c in no_pic]))) if no_pic else {}
         year = p.get("year")
-        best, best_sc = None, -9
+        ranked = []
         for c in cands:
             e = emb.get(c["id"])
             if e is not None:
@@ -256,17 +280,31 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
                 sc += 0.02                                # real archive over stock for named things
             sc += 0.01 if c["kind"] == "video" else 0
             sc -= 0.09 * used.get(c["id"], 0) + (0.20 if c["id"] == prev else 0)   # avoid repeating a picture
-            if sc > best_sc:
-                best, best_sc = c, sc
-        c = best or cands[0]
+            ranked.append((sc, c))
+        ranked.sort(key=lambda x: -x[0])
+        c, best_sc = None, -9
+        for sc, cand in ranked[:8]:                       # best one that can really be downloaded
+            if cand["id"] in bad:
+                continue
+            if _ready(cand, folder):
+                c, best_sc = cand, sc
+                break
+            bad.add(cand["id"])
+            failed[0] += 1
+        if c is None:
+            pex = [x for x in cands if x["source"] == "pexels"] or pexels_cands(px, p.get("stock") or info.get("topic_stock") or "documentary", orient)
+            if not pex:
+                s.update(clip=None, image=None)
+                continue
+            c, best_sc = pex[0], 0.0
         used[c["id"]] = used.get(c["id"], 0) + 1
         prev = c["id"]
         scores.append(best_sc)
         d = s["end"] - s["start"]
         if c["kind"] == "image":
-            s.update(clip=None, image=c["src"], kb=random.choice(["in", "out", "left", "right"]))
+            s.update(clip=None, image=c.get("file") or c["src"], kb=random.choice(["in", "out", "left", "right"]))
         else:
-            link = px.link(c["pexels"], 1920 if aspect == "16:9" else 1080) if c["source"] == "pexels" else c["src"]
+            link = px.link(c["pexels"], 1920 if aspect == "16:9" else 1080) if c["source"] == "pexels" else (c.get("file") or c["src"])
             dur = c.get("dur") or 10
             s.update(clip=link, clip_dur=dur, pexels=c.get("pexels"), image=None,
                      offset=((used[c["id"]] - 1) * 5.0) % max(1.0, dur - d))
@@ -280,6 +318,8 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
     if report:
         with open(report, "w", encoding="utf-8") as f:
             f.write(f"Documentary media plan - subject: {subject}\n\n" + "\n".join(lines))
+    if failed[0]:
+        log(f"  {failed[0]} archive files could not be downloaded - the next best real photo was used instead")
     if scores:
         log(f"  average match score {np.mean(scores):.3f}; "
             f"{sum(1 for s in scenes if s.get('image'))} photos, {sum(1 for s in scenes if s.get('clip'))} film clips")
