@@ -26,7 +26,7 @@ STEP 2 - Cloud access token
                  Secrets = Read and write
   Copy the token (github_pat_...).
 
-STEP 3 - Website on Vercel
+STEP 3 - Website (GitHub Pages, automatic: https://YOURNAME.github.io/fleet-studio/ ; Vercel is optional)
   vercel.com -> Add New -> Project -> import the fleet-studio repo -> Deploy.
   (vercel.json already tells Vercel to publish only the "site" folder.)
   You get a link like https://fleet-studio-xxxx.vercel.app
