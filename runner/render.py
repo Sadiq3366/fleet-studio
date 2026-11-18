@@ -203,7 +203,9 @@ def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=
     words = re.sub(r"[#\"“”]", "", text or "").upper().split()[:8]
     if words:
         d = ImageDraw.Draw(bg)
-        hl = {w.strip(",.!?¡¿:") for w in (highlight or [])} or {max(words, key=len).strip(",.!?¡¿:")}
+        clean = lambda w: w.strip(",.!?¡¿:;\"'").upper()
+        hl = {clean(x) for h in (highlight or []) for x in str(h).split()} & {clean(w) for w in words}
+        hl = set(sorted(hl, key=len, reverse=True)[:2]) or {clean(max(words, key=lambda w: len(clean(w))))}
         n = 1 if len(words) <= 2 else 2 if len(words) <= 5 else 3
         lines = _lines(words, n)
         size = 190
@@ -219,7 +221,7 @@ def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=
             x = 46
             for w in l:
                 tw = d.textlength(w, font=f)
-                if w.strip(",.!?¡¿:") in hl:              # key word: yellow on a red box
+                if clean(w) in hl:              # key word: yellow on a red box
                     bx = d.textbbox((x, y), w, font=f, stroke_width=sw)
                     d.rounded_rectangle([bx[0] - 8, bx[1] - 8, bx[2] + 8, bx[3] + 8], radius=14, fill=(220, 20, 40))
                     d.text((x, y), w, font=f, fill=(255, 230, 0), stroke_width=sw, stroke_fill=(0, 0, 0))

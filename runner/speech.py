@@ -28,11 +28,38 @@ def transcribe(audio, duration, log=print):
 
 
 # ------------------------------------------------------------------ scenes
+END = (".", "?", "!", "…", "。", "؟", "।")
+
+
+def sentences(segments):
+    """Whisper segments can hold 2-3 sentences -> split them at . ? ! using the exact word times."""
+    out = []
+    for seg in segments:
+        ws = seg.get("words") or []
+        if not ws:
+            out.append(dict(seg))
+            continue
+        cur = []
+        for w in ws:
+            cur.append(w)
+            if w["w"].endswith(END) and len(cur) >= 3:
+                out.append({"start": cur[0]["s"], "end": cur[-1]["e"], "text": " ".join(x["w"] for x in cur), "words": cur})
+                cur = []
+        if cur:
+            if out and len(cur) < 3 and out[-1]["words"] and out[-1]["words"][-1] in ws:   # tiny tail -> previous
+                out[-1]["words"] += cur
+                out[-1].update(end=cur[-1]["e"], text=out[-1]["text"] + " " + " ".join(x["w"] for x in cur))
+            else:
+                out.append({"start": cur[0]["s"], "end": cur[-1]["e"], "text": " ".join(x["w"] for x in cur), "words": cur})
+    return out
+
+
 def scenes_from(segments, duration):
-    """Groups sentences into scenes (one stock clip each). Long videos get longer scenes (Pexels limits)."""
-    min_len = max(4.0, min(12.0, duration / 150))
+    """One stock clip per sentence. Very short sentences are joined; long videos use somewhat longer scenes so the
+    free Pexels budget lasts (1 h -> about 6 s per scene)."""
+    min_len = max(2.0, min(8.0, duration / 600))
     scenes, cur = [], None
-    for s in segments:
+    for s in sentences(segments):
         if cur is None:
             cur = {"start": 0.0 if not scenes else scenes[-1]["end"], "end": s["end"], "text": s["text"]}
         else:
@@ -99,8 +126,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             words = [{"w": x, "s": s["start"] + i * (s["end"] - s["start"]) / max(1, len(s["text"].split())),
                       "e": s["start"] + (i + 1) * (s["end"] - s["start"]) / max(1, len(s["text"].split()))}
                      for i, x in enumerate(s["text"].split())]
-        for i in range(0, len(words), max_words):
-            grp = words[i:i + max_words]
+        groups, sent = [], []                         # split per sentence, then into balanced lines of <= N words
+        for j, w in enumerate(words):
+            sent.append(w)
+            if w["w"].endswith(END) or j == len(words) - 1:
+                n = -(-len(sent) // max_words)
+                size = -(-len(sent) // n)
+                groups += [sent[x:x + size] for x in range(0, len(sent), size)]
+                sent = []
+        for grp in groups:
             for k, w in enumerate(grp):
                 a = w["s"] if k else grp[0]["s"]
                 b = grp[k + 1]["s"] if k + 1 < len(grp) else grp[-1]["e"] + 0.15

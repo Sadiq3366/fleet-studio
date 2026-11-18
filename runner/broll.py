@@ -230,7 +230,7 @@ def compose(work, scenes, segments, audio, out, aspect, still, avatar, t0=0.0, t
             "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out]
     log(f"  {tag}: final {W}x{H}, {(t1 - t0) / 60:.1f} min ...")
     render._run(cmd, log)
-    for p in parts:
+    for p in parts + [base]:
         os.remove(p)
     return out
 
