@@ -1,1 +1,79 @@
-{"channels":{},"items":{}}
+{
+ "channels": {
+  "81e373f0813b": {
+   "last_slot": "2026-11-18T07:27:00+00:00",
+   "slots": [
+    "2026-11-18T07:27:00+00:00"
+   ]
+  }
+ },
+ "items": {
+  "e6df1f4602ab": {
+   "status": "done",
+   "run": "44250808725",
+   "started": "2026-11-18T06:23:53+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "T23ZD39Lq2o",
+     "publish": "2026-11-18T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "LJyNYG3ALZU",
+     "publish": "2026-11-18T23:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "euFpJVdnQMc",
+     "publish": "2026-11-19T15:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-18T06:57:32+00:00",
+   "title": "Si Nadie Escribe Primero, Esto le Pasa a la Mente",
+   "log": [
+    "  short1: final 1080x1920, 0.8 min ...",
+    "  short2: final 1080x1920, 0.9 min ...",
+    "== 7. uploading to YouTube",
+    "  upload 3%",
+    "  upload 6%",
+    "  upload 9%",
+    "  upload 12%",
+    "  upload 15%",
+    "  upload 18%",
+    "  upload 22%",
+    "  upload 25%",
+    "  upload 28%",
+    "  upload 31%",
+    "  upload 34%",
+    "  upload 37%",
+    "  upload 41%",
+    "  upload 44%",
+    "  upload 47%",
+    "  upload 50%",
+    "  upload 53%",
+    "  upload 56%",
+    "  upload 59%",
+    "  upload 63%",
+    "  upload 66%",
+    "  upload 69%",
+    "  upload 72%",
+    "  upload 75%",
+    "  upload 78%",
+    "  upload 82%",
+    "  upload 85%",
+    "  upload 88%",
+    "  upload 91%",
+    "  upload 94%",
+    "  upload 97%",
+    "  uploaded https://youtu.be/T23ZD39Lq2o (public at 2026-11-18 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  upload 69%",
+    "  uploaded https://youtu.be/LJyNYG3ALZU (public at 2026-11-18 23:27 UTC)",
+    "  upload 78%",
+    "  uploaded https://youtu.be/euFpJVdnQMc (public at 2026-11-19 15:27 UTC)"
+   ]
+  }
+ }
+}
