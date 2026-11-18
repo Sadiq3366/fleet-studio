@@ -279,10 +279,20 @@ def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
                    "right": ("1.12", "(iw-iw/zoom)*on/{N}", "ih/2-(ih/zoom/2)")}[s.get("kb", "in")]
         z, x, y = (e.replace("{N}", str(N)) for e in (z, x, y))
         vf = None
-        graph0 = (f"[0:v]format=rgb24,split[pa][pb];[pa]scale={W2}:{H2}:force_original_aspect_ratio=increase,crop={W2}:{H2},"
-                  f"boxblur=40:4,eq=brightness=-0.18[pbg];[pb]scale={W2}:{H2}:force_original_aspect_ratio=decrease[pfg];"
-                  f"[pbg][pfg]overlay=(W-w)/2:(H-h)/2,zoompan=z='{z}':x='{x}':y='{y}':d={N}:s={W}x{H}:fps={FPS},"
-                  f"setsar=1,format=yuv420p[b0]")
+        try:
+            from PIL import Image as _I
+            with _I.open(s["image_file"]) as _im:
+                wide = _im.width / max(1, _im.height) >= (W / H) * 0.78
+        except Exception:                             # noqa: BLE001
+            wide = False
+        if wide:                                      # landscape photo: fills the whole screen
+            graph0 = (f"[0:v]format=rgb24,scale={W2}:{H2}:force_original_aspect_ratio=increase,crop={W2}:{H2},"
+                      f"zoompan=z='{z}':x='{x}':y='{y}':d={N}:s={W}x{H}:fps={FPS},setsar=1,format=yuv420p[b0]")
+        else:                                         # (only if a tall photo slips through) blurred side fill
+            graph0 = (f"[0:v]format=rgb24,split[pa][pb];[pa]scale={W2}:{H2}:force_original_aspect_ratio=increase,crop={W2}:{H2},"
+                      f"boxblur=40:4,eq=brightness=-0.18[pbg];[pb]scale={W2}:{H2}:force_original_aspect_ratio=decrease[pfg];"
+                      f"[pbg][pfg]overlay=(W-w)/2:(H-h)/2,zoompan=z='{z}':x='{x}':y='{y}':d={N}:s={W}x{H}:fps={FPS},"
+                      f"setsar=1,format=yuv420p[b0]")
     else:
         inp = ["-loop", "1", "-i", still]
         vf = (f"scale={int(W * 1.12)}:{int(H * 1.12)}:force_original_aspect_ratio=increase,crop={int(W * 1.12)}:{int(H * 1.12)},"

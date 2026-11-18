@@ -119,7 +119,8 @@ class Sources:
                   prev = ii.get("thumburl")
                   out.append({"id": "c" + str(p.get("pageid")), "kind": "video", "src": ii.get("url"),
                               "preview": [re.sub(r"/\d+px-", "/330px-", prev)] if prev and "px-" in prev else [], "dur": dur,
-                              "text": text, "year": _year(date) or _year(title), "credit": credit, "source": "commons"})
+                              "text": text, "year": _year(date) or _year(title), "credit": credit, "w": w, "h": h,
+                              "source": "commons"})
           except Exception:                            # noqa: BLE001
             continue
         self.cache[key] = out
@@ -144,12 +145,24 @@ class Sources:
                             "preview": [r.get("thumbnail") or r["url"]], "text": text, "year": _year(text),
                             "credit": f"{r.get('title', '')[:70]} - {r.get('creator') or 'unknown'} "
                                       f"({(r.get('license') or '').upper()} {r.get('license_version') or ''}, {r.get('source')})",
-                            "source": "openverse"})
+                            "w": r.get("width") or 0, "h": r.get("height") or 0, "source": "openverse"})
         except Exception as e:                           # noqa: BLE001
             self.ov_fail = getattr(self, "ov_fail", 0) + 1
             self.log(f"  openverse '{query}': {str(e)[:80]}")
         self.cache[key] = out
         return out
+
+
+MIN_W = int(os.environ.get("DOC_MIN_WIDTH", "1280"))
+MIN_RATIO = float(os.environ.get("DOC_MIN_RATIO", "1.4"))      # wider than 4:3 -> fills a 16:9 screen
+
+
+def hd_landscape(c):
+    """Only full-screen material: landscape photos/videos at least 1280 px wide (no tall portraits, no tiny files)."""
+    w, h = c.get("w") or 0, c.get("h") or 0
+    if not w or not h:
+        return c["source"] == "pexels"               # Pexels is searched as landscape HD already
+    return w >= MIN_W and w / h >= MIN_RATIO
 
 
 def pexels_cands(px, q, orient):
@@ -159,7 +172,7 @@ def pexels_cands(px, q, orient):
         prev = ([pics[len(pics) // 3]] if pics else []) + ([v["image"].split("?")[0] + "?auto=compress&w=400"] if v.get("image") else [])
         out.append({"id": "p" + str(v["id"]), "kind": "video", "src": None, "pexels": v, "preview": prev,
                     "dur": v.get("duration", 10), "text": re.sub(r"[-/]", " ", v.get("url", "")), "year": None,
-                    "credit": None, "source": "pexels"})
+                    "credit": None, "w": v.get("width") or 0, "h": v.get("height") or 0, "source": "pexels"})
     return out
 
 
@@ -206,13 +219,15 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         if name in pools:
             return pools[name]
         c = []
-        for q in (name, f"{name} portrait"):
-            c += [x for x in src.commons(q, "image", 50) if _names_in(x["text"], names)]
-        c += [x for x in src.commons(name, "video") if _names_in(x["text"], names)]
-        c += [x for x in src.openverse(name) if _names_in(x["text"], names)]
+        for q in (name, f"{name} speech", f"{name} meeting", f"{name} with"):
+            c += [x for x in src.commons(q, "image", 50) if _names_in(x["text"], names) and hd_landscape(x)]
+            if len(c) >= 40:
+                break
+        c += [x for x in src.commons(name, "video") if _names_in(x["text"], names) and hd_landscape(x)]
+        c += [x for x in src.openverse(name) if _names_in(x["text"], names) and hd_landscape(x)]
         uniq = {x["id"]: x for x in c}
         pools[name] = list(uniq.values())
-        log(f"  {name}: {sum(1 for x in pools[name] if x['kind'] == 'image')} real photos, "
+        log(f"  {name}: {sum(1 for x in pools[name] if x['kind'] == 'image')} real HD landscape photos, "
             f"{sum(1 for x in pools[name] if x['kind'] == 'video')} real film clips found")
         return pools[name]
 
@@ -260,7 +275,13 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
                 cands += pexels_cands(px, info.get("topic_stock") or "documentary", orient)
         except Exception as e:                        # one bad search must not stop the documentary
             log(f"  scene {i + 1}: search problem ({str(e)[:100]}) - using what was found")
-        cands = list({c["id"]: c for c in cands}.values())
+        cands = [c for c in {c["id"]: c for c in cands}.values() if hd_landscape(c)]
+        if names:                                     # sentence about a person -> only pictures of that person
+            named = [c for c in cands if _names_in(c["text"], names)]
+            if named:
+                cands = named
+        if not cands and px:                           # nothing HD of it -> matching HD stock video
+            cands = pexels_cands(px, p.get("stock") or info.get("topic_stock") or "documentary", orient)
         if not cands:
             s.update(clip=None, image=None)
             continue
