@@ -25,7 +25,11 @@ BLOCKED = re.compile(r"\b(" + "|".join(re.escape(k) for k in [
     "bikini", "swimsuit", "swimwear", "lingerie", "underwear", "panties", "thong", "nude", "naked", "nudity", "topless",
     "sexy", "seductive", "erotic", "cleavage", "miniskirt", "mini skirt", "short skirt", "crop top", "beachwear",
     "pin-up", "pinup", "lad mag", "swim trunks", "bra", "boxer briefs", "underpants", "undressed", "provocative",
-    "hot pants", "short shorts", "sensual", "glamour model", "corpse", "autopsy", "gore"]) + r")\b", re.I)
+    "hot pants", "short shorts", "sensual", "glamour model", "corpse", "autopsy", "gore",
+    # sensitive: abuse cases / allegations / victims must never appear in a channel video
+    "abuse", "abused", "molest", "molestation", "allegation", "allegations", "accuser", "accusers", "victim", "victims",
+    "pedophile", "paedophile", "leaving neverland", "safechuck", "wade robson", "arvizo", "jordan chandler",
+    "mugshot", "mug shot", "execution", "executed", "lynching", "suicide"]) + r")\b", re.I)
 JUNK = re.compile(r"\b(logo|icon|signature|map of|diagram|chart|flag of|coat of arms|stamp|coin|poster template|"
                   r"screenshot|svg|seal of|emblem)\b", re.I)
 
@@ -153,8 +157,14 @@ class Sources:
         return out
 
 
-MIN_W = int(os.environ.get("DOC_MIN_WIDTH", "1280"))
-MIN_RATIO = float(os.environ.get("DOC_MIN_RATIO", "1.4"))      # wider than 4:3 -> fills a 16:9 screen
+MIN_W = int(os.environ.get("DOC_MIN_WIDTH", "1200"))
+MIN_RATIO = float(os.environ.get("DOC_MIN_RATIO", "1.3"))      # 4:3 or wider -> fills a 16:9 screen (small crop)
+
+
+def _series(c):
+    """Photos of one shoot share a title like 'Michael Jackson - High Res version (4518201173)' -> same series."""
+    t = re.sub(r"\(.*?\)|\d{3,}|\.[a-z]{3,4}\b", "", (c.get("text") or "").split("  ")[0][:60].lower())
+    return c["source"] + ":" + " ".join(t.split()[:4])
 
 
 def hd_landscape(c):
@@ -237,6 +247,7 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
     used, prev, lines, scores, credits = {}, None, [], [], {}
     bad, failed = set(), [0]
     txt_cache = {}
+    series_used, prev_series = {}, None
     TOP_VISUAL = int(os.environ.get("DOC_TOP_VISUAL", "8"))
     folder = os.path.join(os.environ.get("FLEET_WORK") or ".", "seg_dl", "x")
 
@@ -313,9 +324,10 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
                 continue
             if names and _names_in(c["text"], names):
                 sc += 0.08                                # really shows the person named in the sentence
-            if year and c.get("year"):
+            if year and c.get("year"):                   # photo from the right time of the story
                 gap = abs(int(year) - c["year"])
-                sc += 0.05 if gap <= 2 else 0.02 if gap <= 6 else -0.04 if gap > 15 else 0
+                sc += 0.06 if gap <= 2 else 0.03 if gap <= 6 else -0.06 if gap <= 15 else -0.18
+            sc -= 0.07 * series_used.get(_series(c), 0) + (0.12 if prev_series and _series(c) == prev_series else 0)
             if c["source"] != "pexels" and (names or p.get("archive")):
                 sc += 0.02                                # real archive over stock for named things
             sc += 0.01 if c["kind"] == "video" else 0
@@ -338,6 +350,8 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
                 continue
             c, best_sc = pex[0], 0.0
         used[c["id"]] = used.get(c["id"], 0) + 1
+        series_used[_series(c)] = series_used.get(_series(c), 0) + 1
+        prev_series = _series(c)
         prev = c["id"]
         scores.append(best_sc)
         d = s["end"] - s["start"]

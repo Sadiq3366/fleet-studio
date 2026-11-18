@@ -429,7 +429,9 @@ def main():
         doc = os.environ.get("TEST_STYLE") == "documentary"
         if doc and not a.handle:
             text = ("Michael Jackson was born in Gary, Indiana, in 1958. As a child he became the lead singer of the "
-                    "Jackson 5 with his brothers. In 1982 he released Thriller, the best-selling album of all time. "
+                    "Jackson 5 with his brothers. Motown Records signed the group in 1968 in Detroit. "
+                    "In 1982 he released Thriller, the best-selling album of all time. "
+                    "The music video for Thriller was shown again and again on MTV. "
                     "In 1984 President Ronald Reagan honored him at the White House. His famous moonwalk amazed "
                     "audiences around the world. During the Dangerous World Tour in 1992 he performed for millions of "
                     "fans. He died in Los Angeles in 2009, and the whole world mourned the King of Pop.")
@@ -439,7 +441,7 @@ def main():
             voice = "en-US-GuyNeural"
         subprocess.run([sys.executable, "-m", "edge_tts", "--voice", voice, "--text", text,
                         "--write-media", os.path.join(ROOT, "inbox", "test-audio.mp3")], check=True)
-        it = {"id": "test", "channel_id": "test", "audio": "inbox/test-audio.mp3", "aspect": "16:9", "shorts": False,
+        it = {"id": "test", "channel_id": "test", "audio": "inbox/test-audio.mp3", "aspect": "16:9", "shorts": doc,
               "upload": False, "background": "pexels", "title": "", "style": os.environ.get("TEST_STYLE") or "viral",
               "subject": os.environ.get("TEST_SUBJECT") or ""}
         tc = dict(channels.get(a.channel) or {"name": "test"}, id="test")   # test with a real channel's avatar/name
