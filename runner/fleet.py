@@ -162,11 +162,24 @@ def upload(yt, path, title, desc, tags, publish_at, thumb, log, lang=None):
         snip["defaultLanguage"] = snip["defaultAudioLanguage"] = lang
     req = yt.videos().insert(part="snippet,status", body={"snippet": snip, "status": status},
                              media_body=MediaFileUpload(path, chunksize=16 * 1024 * 1024, resumable=True))
-    resp = None
+    log(f"  uploading {os.path.basename(path)} ({os.path.getsize(path) / 1e6:.0f} MB)")
+    resp, fails, last = None, 0, -10
     while resp is None:
-        st, resp = req.next_chunk()
-        if st:
-            log(f"  upload {int(st.progress() * 100)}%")
+        try:
+            st, resp = req.next_chunk(num_retries=3)
+            fails = 0
+            if st and int(st.progress() * 100) >= last + 10:
+                last = int(st.progress() * 100)
+                log(f"  upload {last}%")
+        except Exception as e:                       # noqa: BLE001 - dropped connection: resume where it stopped
+            msg = str(e)
+            if "quota" in msg.lower() or "uploadLimitExceeded" in msg or ("HttpError 4" in repr(e) and "429" not in msg):
+                raise
+            fails += 1
+            if fails > 10:
+                raise
+            log(f"  upload interrupted ({msg[:100]}) - resuming in {10 * fails} s (try {fails}/10)")
+            time.sleep(10 * fails)
     vid = resp["id"]
     log(f"  uploaded https://youtu.be/{vid} " + (f"(public at {publish_at:%Y-%m-%d %H:%M} UTC)" if publish_at else "(public)"))
     if thumb:

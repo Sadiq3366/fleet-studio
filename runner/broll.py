@@ -296,7 +296,7 @@ def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
         graph += f";[{last}]subtitles='{speech.ff_path(sub)}':fontsdir='{speech.ff_path(render.HERE)}'[b2]"
         last = "b2"
     cmd = [render.FFMPEG, "-y", "-hide_banner", "-loglevel", "error", *inp, *extra, "-filter_complex", graph,
-           "-map", f"[{last}]", "-frames:v", str(frames), "-an", "-c:v", "libx264", "-preset", preset, "-crf", "21",
+           "-map", f"[{last}]", "-frames:v", str(frames), "-an", "-c:v", "libx264", "-preset", preset, "-crf", "21" if preset == "veryfast" else "23",
            "-pix_fmt", "yuv420p", "-r", str(FPS), "-threads", "2", out]
     try:
         render._run(cmd, log)
@@ -319,7 +319,8 @@ def compose(work, scenes, segments, audio, out, aspect, still, avatar, t0=0.0, t
     d = os.path.join(work, f"seg_{tag}")
     os.makedirs(d, exist_ok=True)
     total = t1 - t0
-    preset = "veryfast" if total <= 300 else "superfast" if total <= 2400 else "ultrafast"
+    # long videos: still fast, but much smaller files than "ultrafast" (faster, safer YouTube upload)
+    preset = "veryfast" if total <= 300 else "superfast" if total <= 5400 else "ultrafast"
     av, av_w = None, 0
     if avatar:
         av = render._speaker_png(avatar, os.path.join(work, f"avatar_{tag}.png"), int(H * (0.42 if aspect == "16:9" else 0.24)))
