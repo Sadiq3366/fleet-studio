@@ -83,42 +83,45 @@ class Sources:
             except Exception as e:                       # noqa: BLE001
                 self.log(f"  commons '{query}': {str(e)[:80]}")
         for p in (j.get("query", {}).get("pages", {}) or {}).values():
-            ii = (p.get("imageinfo") or [{}])[0]
-            md = ii.get("extmetadata") or {}
-            title = p.get("title", "").replace("File:", "")
-            desc = _clean_html((md.get("ImageDescription") or {}).get("value", ""))[:400]
-            cats = _clean_html((md.get("Categories") or {}).get("value", ""))[:400]
-            text = f"{title} {desc} {cats}"
-            if BLOCKED.search(text) or JUNK.search(title):
-                continue
-            mime, w, h = ii.get("mime", ""), ii.get("width", 0), ii.get("height", 0)
-            date = _clean_html((md.get("DateTimeOriginal") or {}).get("value", ""))
-            name = re.sub(r"\.[a-z0-9]+$", "", title, flags=re.I)[:70]
-            artist = _clean_html((md.get("Artist") or {}).get("value", ""))[:50] or "Wikimedia Commons"
-            lic = (md.get("LicenseShortName") or {}).get("value", "see Commons")
-            credit = f"{name} - {artist} ({lic})"
-            if kind == "image":
-                if mime not in ("image/jpeg", "image/png", "image/webp") or w < 400 or h < 300:
-                    continue
-                tu = ii.get("thumburl") or ""
-                if "/thumb/" not in tu or w < 500:
-                    continue
-                sw = next(x for x in (1920, 1280, 960, 500) if w > x)    # Wikimedia only serves standard sizes
-                src = re.sub(r"/\d+px-", f"/{sw}px-", tu)
-                prev = re.sub(r"/\d+px-", "/330px-", tu)
-                out.append({"id": "c" + str(p.get("pageid")), "kind": "image", "src": src, "preview": [prev],
-                            "text": text, "year": _year(date) or _year(title), "credit": credit, "w": w, "h": h,
-                            "source": "commons"})
-            else:
-                if not mime.startswith(("video/", "application/ogg")):
-                    continue
-                dur = float(ii.get("duration") or 0) or 30.0
-                if dur < 3:
-                    continue
-                prev = ii.get("thumburl")
-                out.append({"id": "c" + str(p.get("pageid")), "kind": "video", "src": ii.get("url"),
-                            "preview": [re.sub(r"/\d+px-", "/330px-", prev)] if prev and "px-" in prev else [], "dur": dur,
-                            "text": text, "year": _year(date) or _year(title), "credit": credit, "source": "commons"})
+          try:
+              ii = (p.get("imageinfo") or [{}])[0]
+              md = ii.get("extmetadata") or {}
+              title = p.get("title", "").replace("File:", "")
+              desc = _clean_html((md.get("ImageDescription") or {}).get("value", ""))[:400]
+              cats = _clean_html((md.get("Categories") or {}).get("value", ""))[:400]
+              text = f"{title} {desc} {cats}"
+              if BLOCKED.search(text) or JUNK.search(title):
+                  continue
+              mime, w, h = ii.get("mime", ""), ii.get("width", 0), ii.get("height", 0)
+              date = _clean_html((md.get("DateTimeOriginal") or {}).get("value", ""))
+              name = re.sub(r"\.[a-z0-9]+$", "", title, flags=re.I)[:70]
+              artist = _clean_html((md.get("Artist") or {}).get("value", ""))[:50] or "Wikimedia Commons"
+              lic = (md.get("LicenseShortName") or {}).get("value", "see Commons")
+              credit = f"{name} - {artist} ({lic})"
+              if kind == "image":
+                  if mime not in ("image/jpeg", "image/png", "image/webp") or w < 400 or h < 300:
+                      continue
+                  tu = ii.get("thumburl") or ""
+                  if "/thumb/" not in tu or w < 500:
+                      continue
+                  sw = next((x for x in (1920, 1280, 960, 500) if w > x), 500)   # Wikimedia standard sizes only
+                  src = re.sub(r"/\d+px-", f"/{sw}px-", tu)
+                  prev = re.sub(r"/\d+px-", "/330px-", tu)
+                  out.append({"id": "c" + str(p.get("pageid")), "kind": "image", "src": src, "preview": [prev],
+                              "text": text, "year": _year(date) or _year(title), "credit": credit, "w": w, "h": h,
+                              "source": "commons"})
+              else:
+                  if not mime.startswith(("video/", "application/ogg")):
+                      continue
+                  dur = float(ii.get("duration") or 0) or 30.0
+                  if dur < 3:
+                      continue
+                  prev = ii.get("thumburl")
+                  out.append({"id": "c" + str(p.get("pageid")), "kind": "video", "src": ii.get("url"),
+                              "preview": [re.sub(r"/\d+px-", "/330px-", prev)] if prev and "px-" in prev else [], "dur": dur,
+                              "text": text, "year": _year(date) or _year(title), "credit": credit, "source": "commons"})
+          except Exception:                            # noqa: BLE001
+            continue
         self.cache[key] = out
         return out
 
@@ -239,19 +242,22 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         is_subject = who and subject and (who.lower() == "subject" or who.lower() == subject.lower())
         names = aliases if is_subject else ([who] if who and who.lower() not in ("none", "nobody") else [])
         cands = []
-        if names:
-            cands += person_pool(subject if is_subject else who, names if is_subject else _aliases(who, []))
+        try:
+            if names:
+                cands += person_pool(subject if is_subject else who, names if is_subject else _aliases(who, []))
+                if p.get("archive"):
+                    cands += [x for x in src.commons(p["archive"], "image") if _names_in(x["text"], names)]
             if p.get("archive"):
-                cands += [x for x in src.commons(p["archive"], "image") if _names_in(x["text"], names)]
-        if p.get("archive"):
-            cands += src.commons(p["archive"], "image", 20)
-            cands += src.commons(p["archive"], "video", 10)
-            if not names:
-                cands += src.openverse(p["archive"], 15)
-        if p.get("stock") and (not names or len(cands) < 6):
-            cands += pexels_cands(px, p["stock"], orient)
-        if not cands and px:
-            cands += pexels_cands(px, info.get("topic_stock") or "documentary", orient)
+                cands += src.commons(p["archive"], "image", 20)
+                cands += src.commons(p["archive"], "video", 10)
+                if not names:
+                    cands += src.openverse(p["archive"], 15)
+            if p.get("stock") and (not names or len(cands) < 6):
+                cands += pexels_cands(px, p["stock"], orient)
+            if not cands and px:
+                cands += pexels_cands(px, info.get("topic_stock") or "documentary", orient)
+        except Exception as e:                        # one bad search must not stop the documentary
+            log(f"  scene {i + 1}: search problem ({str(e)[:100]}) - using what was found")
         cands = list({c["id"]: c for c in cands}.values())
         if not cands:
             s.update(clip=None, image=None)

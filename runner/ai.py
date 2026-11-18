@@ -4,6 +4,7 @@ import json
 import os
 import re
 import time
+import urllib.error
 import urllib.request
 
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
@@ -19,15 +20,42 @@ def _post(url, body, headers=None, timeout=120):
 def _gemini(prompt, key):
     """Free Gemini; when one model is busy (503) the next one is tried."""
     err = None
-    for model in dict.fromkeys([GEMINI_MODEL, "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"]):
+    models = [m for m in dict.fromkeys(_GOOD + [GEMINI_MODEL] + _available(key)) if m not in _BAD]
+    for model in models[:6]:
         try:
             j = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}",
                       {"contents": [{"parts": [{"text": prompt}]}],
                        "generationConfig": {"temperature": 0.8, "responseMimeType": "application/json"}})
+            if model not in _GOOD:
+                _GOOD.insert(0, model)                    # remember the model that works
             return j["candidates"][0]["content"]["parts"][0]["text"]
+        except urllib.error.HTTPError as e:
+            err = e
+            if e.code in (400, 404):
+                _BAD.add(model)                           # model does not exist (any more) -> never ask again
         except Exception as e:                       # noqa: BLE001
             err = e
-    raise err
+    raise err or RuntimeError("no Gemini model available")
+
+
+_GOOD, _BAD, _MODELS = [], set(), []
+
+
+def _available(key):
+    """The Gemini 'flash' models this key can really use (asked once from Google)."""
+    if not _MODELS:
+        try:
+            req = urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models?key={key}&pageSize=200")
+            with urllib.request.urlopen(req, timeout=30) as r:
+                ms = json.loads(r.read()).get("models", [])
+            names = [m["name"].split("/")[-1] for m in ms
+                     if "generateContent" in (m.get("supportedGenerationMethods") or []) and "flash" in m["name"]
+                     and not any(x in m["name"] for x in ("image", "tts", "audio", "live", "exp", "preview", "thinking"))]
+            names.sort(key=lambda n: ("lite" in n, n), reverse=False)
+            _MODELS.extend(sorted(names, key=lambda n: ("lite" in n, -len(n))) or ["gemini-2.0-flash"])
+        except Exception:                            # noqa: BLE001
+            _MODELS.extend(["gemini-2.0-flash", "gemini-2.0-flash-lite"])
+    return _MODELS
 
 
 def _pollinations(prompt):
