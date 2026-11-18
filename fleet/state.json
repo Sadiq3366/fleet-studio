@@ -7,7 +7,12 @@
     "2026-11-20T07:27:00+00:00"
    ]
   },
-  "50ab3e4e36ea": {}
+  "50ab3e4e36ea": {
+   "last_slot": "2026-11-18T13:17:00+00:00",
+   "slots": [
+    "2026-11-18T13:17:00+00:00"
+   ]
+  }
  },
  "items": {
   "e6df1f4602ab": {
@@ -145,43 +150,26 @@
    ]
   },
   "392ec9799378": {
-   "status": "error",
-   "run": "44283674030",
-   "started": "2026-11-18T10:17:34+00:00",
-   "error": "[Errno 32] Broken pipe",
-   "finished": "2026-11-18T11:52:58+00:00",
+   "status": "done",
+   "run": "44299012629",
+   "started": "2026-11-18T11:56:31+00:00",
+   "error": null,
+   "finished": "2026-11-18T12:47:36+00:00",
    "retry_at": null,
    "log": [
-    "== 3. documentary: real archive photos & film for 169 sentences",
-    "  subject: Hjalmar Schacht (person, 1877-1970); other people: Adolf Hitler, William Leianart Shacht, Constanza Yostina von Egger's, Eddie Schacht, Horace Greeley, Luisa Sova",
-    "  loading the visual matching model (CLIP)...",
-    "  Hjalmar Schacht: 39 real photos, 0 real film clips found",
-    "  openverse 'Adolf Hitler': HTTP Error 504: Gateway Timeout",
-    "  Adolf Hitler: 103 real photos, 30 real film clips found",
-    "  William Leianart Shacht: 0 real photos, 0 real film clips found",
-    "  Constanza Yostina von Egger's: 0 real photos, 0 real film clips found",
-    "  openverse 'Eddie Schacht': HTTP Error 504: Gateway Timeout",
-    "  Eddie Schacht: 0 real photos, 0 real film clips found",
-    "  Horace Greeley: 90 real photos, 0 real film clips found",
-    "  scenes 25/169, match score 0.310",
-    "  Luisa Sova: 0 real photos, 0 real film clips found",
-    "  Inga Schacht: 0 real photos, 0 real film clips found",
-    "  openverse 'John Pierpont Morgan': HTTP Error 504: Gateway Timeout",
-    "  John Pierpont Morgan: 51 real photos, 0 real film clips found",
-    "  openverse 'Treaty of Brest Litovsk signing 1918': HTTP Error 504: Gateway Timeout",
-    "  openverse 'Armistice celebration crowd Paris 1918': HTTP Error 504: Gateway Timeout",
-    "  scenes 50/169, match score 0.300",
-    "  openverse 'Freikorps Berlin street fighting 1919': HTTP Error 504: Gateway Timeout",
-    "  openverse 'Paris Peace Conference Versailles 1919 delegates': HTTP Error 504: Gateway Timeout",
-    "  scenes 75/169, match score 0.332",
-    "  scenes 100/169, match score 0.283",
-    "  scenes 125/169, match score 0.275",
-    "  openverse 'Weimar Republic hyperinflation money street 1923': HTTP Error 500: Internal Server Error",
-    "  scenes 150/169, match score 0.269",
-    "  11 archive files could not be downloaded - the next best real photo was used instead",
-    "  average match score 0.288; 143 photos, 26 film clips",
+    "  openverse 'Treaty of Brest-Litovsk signing 1918': HTTP Error 504: Gateway Timeout",
+    "  openverse 'Armistice celebrations November 1918': The read operation timed out",
+    "  scenes 50/169, match score 0.295",
+    "  openverse 'National Social Union congress Germany 1905': HTTP Error 504: Gateway Timeout",
+    "  openverse 'German hyperinflation bank notes children 1923': HTTP Error 504: Gateway Timeout",
+    "  scenes 75/169, match score 0.285",
+    "  scenes 100/169, match score 0.252",
+    "  scenes 125/169, match score 0.163",
+    "  scenes 150/169, match score 0.108",
+    "  2 archive files could not be downloaded - the next best real photo was used instead",
+    "  average match score 0.213; 154 photos, 15 film clips",
     "== 4. video 16:9 with subtitles + music (44.3 min)",
-    "  main: 169 scenes, 44.3 min, 4 at a time (ultrafast)",
+    "  main: 169 scenes, 44.3 min, 4 at a time (superfast)",
     "  main: 40/169 scenes ready",
     "  main: 80/169 scenes ready",
     "  main: 120/169 scenes ready",
@@ -189,10 +177,45 @@
     "== 5. thumbnail",
     "thumbnail made",
     "== 6. vertical Shorts",
-    "  short1: 7 scenes, 0.9 min, 4 at a time (veryfast)",
-    "  short2: 4 scenes, 1.0 min, 4 at a time (veryfast)",
-    "== 7. uploading to YouTube"
-   ]
+    "  short1: 7 scenes, 1.0 min, 4 at a time (veryfast)",
+    "  short2: 3 scenes, 1.0 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (350 MB)",
+    "  upload 4%",
+    "  upload 14%",
+    "  upload 24%",
+    "  upload 38%",
+    "  upload 48%",
+    "  upload 62%",
+    "  upload 72%",
+    "  upload 86%",
+    "  upload 96%",
+    "  uploaded https://youtu.be/9h-ezlK3wYU (public at 2026-11-18 13:17 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 87%",
+    "  uploaded https://youtu.be/F7d2XdtLdIw (public at 2026-11-19 21:17 UTC)",
+    "  uploading short_2.mp4 (1 MB)",
+    "  uploaded https://youtu.be/3oexbP4FDfQ (public at 2026-11-21 05:17 UTC)"
+   ],
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "9h-ezlK3wYU",
+     "publish": "2026-11-18T13:17:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "F7d2XdtLdIw",
+     "publish": "2026-11-19T21:17:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "3oexbP4FDfQ",
+     "publish": "2026-11-21T05:17:00+00:00"
+    }
+   ],
+   "title": "The Banker Who Secretly Built Nazi Germany"
   }
  }
 }
