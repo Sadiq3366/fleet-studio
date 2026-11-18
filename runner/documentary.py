@@ -245,7 +245,7 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         person_pool(subject, aliases)
     sent_emb = m.text([s["text"] or subject for s in scenes])
     used, prev, lines, scores, credits = {}, None, [], [], {}
-    bad, failed = set(), [0]
+    bad, failed, films_off = set(), [0], [False]
     txt_cache = {}
     series_used, prev_series = {}, None
     TOP_VISUAL = int(os.environ.get("DOC_TOP_VISUAL", "8"))
@@ -264,9 +264,14 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
             if ok:
                 cand["file"] = t["image_file"]
             return ok
+        if films_off[0]:                              # Wikimedia refused a film already -> photos only
+            return False
         f = broll._wiki_film(cand["src"], folder) if "wikimedia.org" in cand["src"] else None
         if f:
             cand["file"] = f
+        else:
+            films_off[0] = True
+            log("  Wikimedia film downloads are refused right now - using photos for the rest of this video")
         return bool(f)
     for i, (s, p) in enumerate(zip(scenes, per)):
         who = (p.get("who") or "").strip()

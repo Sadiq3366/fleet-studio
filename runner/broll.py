@@ -192,13 +192,17 @@ _UA = "FleetStudio/1.0 (open-source documentary video tool)"
 _FILE_LOCKS = {}
 
 
-def _download(urls, p, max_mb=400):
-    """Polite download (Wikimedia: <= 2 at a time, honours 429 Retry-After). Tries the urls in order."""
+def _download(urls, p, max_mb=400, budget=60):
+    """Polite download (Wikimedia: <= 2 at a time, honours 429). Tries the urls in order, but never longer than
+    `budget` seconds in total - a refused file must not block the whole video (it once blocked 38 minutes)."""
     import threading
     lock = _FILE_LOCKS.setdefault(p, threading.Lock())
+    t_end = time.time() + budget
     with lock, _PHOTO_LOCK:
         for url in urls:
-            for n in range(5):
+            for n in range(2):
+                if time.time() > t_end:
+                    return p if os.path.isfile(p) else None
                 if os.path.isfile(p):
                     return p
                 try:
@@ -219,11 +223,11 @@ def _download(urls, p, max_mb=400):
                     if e.code == 404:
                         break                                  # try the next url
                     wait = int(e.headers.get("Retry-After") or 0) if e.headers else 0
-                    time.sleep(min(30, max(wait, 3 * (n + 1))))
+                    time.sleep(max(0, min(10, max(wait, 3 * (n + 1)), t_end - time.time())))
                 except ValueError:
                     break
                 except Exception:                              # noqa: BLE001
-                    time.sleep(2 + n * 3)
+                    time.sleep(max(0, min(2 + n * 3, t_end - time.time())))
     return p if os.path.isfile(p) else None
 
 
@@ -237,7 +241,7 @@ def _fetch_image(s, folder):
     p = os.path.join(os.path.dirname(folder), "photos", hashlib.md5(url.encode()).hexdigest()[:16] + ".img")
     os.makedirs(os.path.dirname(p), exist_ok=True)
     s["image_file"] = p
-    return bool(_download([url], p, 40))
+    return bool(_download([url], p, 40, budget=45))
 
 
 def _wiki_film(url, folder):
@@ -252,7 +256,7 @@ def _wiki_film(url, folder):
     urls.append(url)
     p = os.path.join(os.path.dirname(folder), "films", hashlib.md5(url.encode()).hexdigest()[:16] + ".webm")
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    return _download(urls, p, 300)
+    return _download(urls, p, 150, budget=90)
 
 
 def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
