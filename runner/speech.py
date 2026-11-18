@@ -3,9 +3,67 @@ import os
 import re
 
 
-def transcribe(audio, duration, log=print):
+def transcribe(audio, duration, log=print, groq_key=None):
+    if groq_key:
+        try:
+            return _groq(audio, duration, groq_key, log)
+        except Exception as e:                          # noqa: BLE001
+            log(f"  Groq speech-to-text failed ({str(e)[:150]}) - using the local model")
+    return _local(audio, duration, log)
+
+
+def _groq(audio, duration, key, log):
+    """Whisper large-v3-turbo on Groq (free key): ~20 s for 20 min of audio. Sent in 20-minute pieces."""
+    import json
+    import subprocess
+    import tempfile
+    import urllib.request
+    import uuid
+
+    import render
+    log(f"speech to text (Groq whisper-large-v3-turbo, {duration / 60:.1f} min audio)...")
+    piece, out, lang = 20 * 60, [], None
+    tmp = tempfile.mkdtemp()
+    for n, t0 in enumerate(range(0, int(duration) + 1, piece)):
+        if duration - t0 < 0.5:
+            break
+        p = os.path.join(tmp, f"p{n}.mp3")                 # small mono file (Groq free limit is 25 MB)
+        subprocess.run([render.FFMPEG, "-v", "error", "-y", "-ss", str(t0), "-t", str(piece), "-i", audio,
+                        "-ac", "1", "-ar", "16000", "-b:a", "48k", p], check=True)
+        bnd = uuid.uuid4().hex
+        fields = [("model", "whisper-large-v3-turbo"), ("response_format", "verbose_json"),
+                  ("timestamp_granularities[]", "word"), ("timestamp_granularities[]", "segment"), ("temperature", "0")]
+        body = b"".join(f'--{bnd}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode() for k, v in fields)
+        with open(p, "rb") as f:
+            body += (f'--{bnd}\r\nContent-Disposition: form-data; name="file"; filename="a.mp3"\r\n'
+                     f'Content-Type: audio/mpeg\r\n\r\n').encode() + f.read() + f"\r\n--{bnd}--\r\n".encode()
+        req = urllib.request.Request("https://api.groq.com/openai/v1/audio/transcriptions", data=body, method="POST",
+                                     headers={"Authorization": f"Bearer {key}", "User-Agent": "fleet-studio/1.0",
+                                              "Content-Type": f"multipart/form-data; boundary={bnd}"})
+        with urllib.request.urlopen(req, timeout=300) as r:
+            j = json.loads(r.read())
+        lang = lang or j.get("language")
+        words = [{"w": w["word"].strip(), "s": w["start"] + t0, "e": w["end"] + t0} for w in j.get("words", []) if w["word"].strip()]
+        wi = 0
+        for sg in j.get("segments", []):
+            a, b = sg["start"] + t0, sg["end"] + t0
+            ws = []
+            while wi < len(words) and words[wi]["s"] < b - 0.01:
+                ws.append(words[wi])
+                wi += 1
+            out.append({"start": a, "end": b, "text": sg["text"].strip(), "words": ws})
+        if wi < len(words) and out:
+            out[-1]["words"] += words[wi:]
+    names = {"spanish": "es", "english": "en", "hindi": "hi", "urdu": "ur", "portuguese": "pt", "french": "fr",
+             "german": "de", "italian": "it", "arabic": "ar", "turkish": "tr", "indonesian": "id", "russian": "ru"}
+    lang = names.get((lang or "").lower(), (lang or "")[:2].lower() or None)
+    log(f"  language: {lang}, {len(out)} sentences")
+    return out, lang
+
+
+def _local(audio, duration, log):
     from faster_whisper import WhisperModel
-    size = os.environ.get("WHISPER_MODEL") or ("small" if duration <= 20 * 60 else "base")
+    size = os.environ.get("WHISPER_MODEL") or ("small" if duration <= 8 * 60 else "base")
     log(f"speech to text (whisper {size}, {duration / 60:.1f} min audio)...")
     model = WhisperModel(size, device="cpu", compute_type="int8", cpu_threads=os.cpu_count() or 4)
     import subprocess

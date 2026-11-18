@@ -37,6 +37,7 @@ jobs:
           FLEET_VAULT_KEY: ${{ secrets.FLEET_VAULT_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           YT_COOKIES: ${{ secrets.YT_COOKIES }}
           MODE: ${{ inputs.mode || 'autopilot' }}
           ITEM: ${{ inputs.item }}

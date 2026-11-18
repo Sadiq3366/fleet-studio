@@ -1,6 +1,7 @@
 """Stock clips from Pexels for every scene, cut to the speech, joined into one timeline (any length: 1 h, 3 h ...)."""
 import json
 import os
+import shutil
 import subprocess
 import time
 import urllib.parse
@@ -75,12 +76,22 @@ class Pexels:
             return self.download(v, need_w), v.get("duration", 10), self.used[v["id"]]
         return None, 0, 0
 
-    def download(self, v, need_w):
+    @staticmethod
+    def _best_file(v, need_w):
         files = [f for f in v.get("video_files", []) if f.get("link") and f.get("width") and f.get("file_type") == "video/mp4"]
         if not files:
             return None
         big = [f for f in files if min(f["width"], f["height"]) >= min(need_w, 1080) and max(f["width"], f["height"]) <= 2560]
-        f = min(big, key=lambda f: f["width"]) if big else max(files, key=lambda f: f["width"])
+        return min(big, key=lambda f: f["width"]) if big else max(files, key=lambda f: f["width"])
+
+    def link(self, v, need_w):
+        f = self._best_file(v, need_w)
+        return f["link"] if f else None
+
+    def download(self, v, need_w):
+        f = self._best_file(v, need_w)
+        if not f:
+            return None
         p = os.path.join(self.cache, f"{v['id']}_{f['width']}.mp4")
         if not os.path.isfile(p):
             for n in range(3):
@@ -153,9 +164,9 @@ def plan(scenes, queries, topic_q, px, aspect, log=print, report=None):
         else:
             v = sorted(cands, key=lambda c: (px.used.get(c["id"], 0), c["id"] == prev_id))[0]
         px.used[v["id"]] = px.used.get(v["id"], 0) + 1
-        clip = px.download(v, need)
+        clip = px.link(v, need)
         dur = v.get("duration", 10)
-        s.update(clip=clip, clip_dur=dur, query=qs[0],
+        s.update(clip=clip, clip_dur=dur, query=qs[0], pexels=v,
                  offset=((px.used[v["id"]] - 1) * 4.0) % max(1.0, dur - d) if dur else 0)
         prev_id = v["id"]
         lines.append(f"{s['start']:7.1f}s  [{(scores[-1] if m and scores else 0):.3f}]  {s['text'][:90]}\n"
@@ -171,67 +182,93 @@ def plan(scenes, queries, topic_q, px, aspect, log=print, report=None):
     return scenes
 
 
-def _seg(s, out, W, H, still, log, slow=False):
-    d = s["end"] - s["start"]
-    zoom = f",scale={int(W * 1.06)}:{int(H * 1.06)},crop={W}:{H}:'(iw-ow)/2+(iw-ow)/2*sin(t/3)':'(ih-oh)/2'" if slow else ""
-    vf = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}{zoom},setsar=1,fps=30,format=yuv420p"
-    if s.get("clip"):
-        inp = (["-stream_loop", "-1"] if s.get("clip_dur", 0) < d + s.get("offset", 0) + 0.5 else []) + \
-              ["-ss", f"{s.get('offset', 0):.2f}", "-i", s["clip"]]
+FPS = 30
+
+
+def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
+    """One finished scene: clip (read straight from Pexels, only the needed seconds) + avatar + subtitles.
+    Encoded once; the scenes are later joined without re-encoding."""
+    d = frames / FPS
+    vf = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={FPS},format=yuv420p"
+    src = s.get("clip")
+    if src:
+        net = ["-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"] if src.startswith("http") else []
+        loop = ["-stream_loop", "-1"] if s.get("clip_dur", 0) < d + s.get("offset", 0) + 0.5 else []
+        inp = [*net, *loop, "-ss", f"{s.get('offset', 0):.2f}", "-i", src]
     else:
         inp = ["-loop", "1", "-i", still]
         vf = (f"scale={int(W * 1.12)}:{int(H * 1.12)}:force_original_aspect_ratio=increase,crop={int(W * 1.12)}:{int(H * 1.12)},"
-              f"crop={W}:{H}:'(iw-ow)/2+(iw-ow)/2*sin(t/9)':'(ih-oh)/2+(ih-oh)/2*cos(t/11)',setsar=1,fps=30,format=yuv420p")
-    render._run([render.FFMPEG, "-y", "-hide_banner", *inp, "-t", f"{d:.3f}", "-vf", vf, "-an",
-                 "-c:v", "libx264", "-preset", "ultrafast", "-crf", "19", "-r", "30", out], log)
+              f"crop={W}:{H}:'(iw-ow)/2+(iw-ow)/2*sin(t/9)':'(ih-oh)/2+(ih-oh)/2*cos(t/11)',setsar=1,fps={FPS},format=yuv420p")
+    graph, last, extra = f"[0:v]{vf}[b0]", "b0", []
+    if avatar:
+        extra = ["-loop", "1", "-i", avatar]
+        graph += f";[{last}][1:v]overlay=x={int(W * 0.015)}:y=H-h[b1]"
+        last = "b1"
+    if sub:
+        graph += f";[{last}]subtitles='{speech.ff_path(sub)}':fontsdir='{speech.ff_path(render.HERE)}'[b2]"
+        last = "b2"
+    cmd = [render.FFMPEG, "-y", "-hide_banner", "-loglevel", "error", *inp, *extra, "-filter_complex", graph,
+           "-map", f"[{last}]", "-frames:v", str(frames), "-an", "-c:v", "libx264", "-preset", preset, "-crf", "21",
+           "-pix_fmt", "yuv420p", "-r", str(FPS), "-threads", "2", out]
+    try:
+        render._run(cmd, log)
+    except RuntimeError:
+        if not (src and src.startswith("http") and px and s.get("pexels")):
+            raise
+        local = px.download(s["pexels"], W if W > H else H)          # streaming failed -> download the file once
+        if not local:
+            raise
+        log("  clip streaming failed - downloaded it instead")
+        _seg(dict(s, clip=local), out, W, H, still, avatar, sub, frames, preset, log)
 
 
-def compose(work, scenes, segments, audio, out, aspect, still, avatar, t0=0.0, t1=None, log=print, tag="main"):
-    """Clips for [t0,t1] + audio + subtitles + avatar bottom-left -> final mp4."""
+def compose(work, scenes, segments, audio, out, aspect, still, avatar, t0=0.0, t1=None, log=print, tag="main", px=None):
+    """Clips for [t0,t1] + subtitles + avatar, rendered 4 scenes at a time, joined without re-encoding, + audio."""
+    from concurrent.futures import ThreadPoolExecutor
     W, H = (1920, 1080) if aspect == "16:9" else (1080, 1920)
     t1 = t1 if t1 is not None else scenes[-1]["end"]
     d = os.path.join(work, f"seg_{tag}")
     os.makedirs(d, exist_ok=True)
-    parts = []
-    for i, s in enumerate(scenes):
-        a, b = max(s["start"], t0), min(s["end"], t1)
-        if b - a < 0.05:
+    total = t1 - t0
+    preset = "veryfast" if total <= 300 else "superfast" if total <= 2400 else "ultrafast"
+    av, av_w = None, 0
+    if avatar:
+        av = render._speaker_png(avatar, os.path.join(work, f"avatar_{tag}.png"), int(H * (0.42 if aspect == "16:9" else 0.24)))
+        from PIL import Image
+        av_w = Image.open(av).width
+    f0 = round(t0 * FPS)
+    jobs = []
+    for s in scenes:                                   # frame-exact cut points -> picture never drifts from the voice
+        fa, fb = max(round(s["start"] * FPS), f0), min(round(s["end"] * FPS), round(t1 * FPS))
+        if fb - fa < 2:
             continue
-        p = os.path.join(d, f"{len(parts):05d}.mp4")
-        _seg(dict(s, start=a, end=b), p, W, H, still, log)
-        parts.append(p)
-        if len(parts) % 40 == 0:
-            log(f"  {tag}: {len(parts)} scenes cut")
+        n = len(jobs)
+        p = os.path.join(d, f"{n:05d}.mp4")
+        sub = None
+        if segments:
+            sub = speech.ass(segments, os.path.join(d, f"{n:05d}.ass"), W, H, fa / FPS, fb / FPS,
+                             left_margin=av_w if aspect == "16:9" else 0)
+        jobs.append((dict(s), p, sub, fb - fa))
+    log(f"  {tag}: {len(jobs)} scenes, {total / 60:.1f} min, {os.cpu_count()} at a time ({preset})")
+    done = [0]
+
+    def work_one(j):
+        s, p, sub, frames = j
+        _seg(s, p, W, H, still, av, sub, frames, preset, log, px)
+        done[0] += 1
+        if done[0] % 40 == 0:
+            log(f"  {tag}: {done[0]}/{len(jobs)} scenes ready")
+
+    with ThreadPoolExecutor(max(2, os.cpu_count() or 4)) as ex:
+        list(ex.map(work_one, jobs))
     lst = os.path.join(d, "list.txt")
     with open(lst, "w", encoding="utf-8") as f:
-        f.writelines(f"file '{p.replace(os.sep, '/')}'\n" for p in parts)
-    base = os.path.join(d, "base.mp4")
-    render._run([render.FFMPEG, "-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", base], log)
-
-    av_h = int(H * (0.42 if aspect == "16:9" else 0.24))
-    av_w = 0
-    cmd = [render.FFMPEG, "-y", "-hide_banner", "-i", base, "-ss", f"{t0:.3f}", "-t", f"{t1 - t0:.3f}", "-i", audio]
-    graph, last = "[0:v]null[v0]", "v0"
-    if avatar:
-        sp = render._speaker_png(avatar, os.path.join(work, f"avatar_{tag}.png"), av_h)
-        from PIL import Image
-        av_w = Image.open(sp).width
-        cmd += ["-loop", "1", "-i", sp]
-        graph += f";[{last}][2:v]overlay=x={int(W * 0.015)}:y=H-h:shortest=1[v1]"
-        last = "v1"
-    if segments:
-        sub = speech.ass(segments, os.path.join(work, f"subs_{tag}.ass"), W, H, t0, t1,
-                         left_margin=av_w if aspect == "16:9" else 0)
-        graph += f";[{last}]subtitles='{speech.ff_path(sub)}':fontsdir='{speech.ff_path(render.HERE)}'[v2]"
-        last = "v2"
-    long_video = (t1 - t0) > 40 * 60
-    cmd += ["-filter_complex", graph, "-map", f"[{last}]", "-map", "1:a", "-shortest",
-            "-c:v", "libx264", "-preset", "superfast" if long_video else "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out]
-    log(f"  {tag}: final {W}x{H}, {(t1 - t0) / 60:.1f} min ...")
-    render._run(cmd, log)
-    for p in parts + [base]:
-        os.remove(p)
+        f.writelines(f"file '{p.replace(os.sep, '/')}'\n" for _, p, _, _ in jobs)
+    frames = sum(j[3] for j in jobs)
+    render._run([render.FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst,
+                 "-ss", f"{t0:.3f}", "-t", f"{frames / FPS:.3f}", "-i", audio, "-map", "0:v", "-map", "1:a",
+                 "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], log)
+    shutil.rmtree(d, ignore_errors=True)
     return out
 
 

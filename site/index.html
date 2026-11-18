@@ -167,8 +167,8 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
   <div class="card">
     <h3>Free API keys (saved as encrypted GitHub secrets)</h3>
     <div class="mute"><b>Pexels</b> (needed for stock clips): free key at <a href="https://www.pexels.com/api/" target="_blank">pexels.com/api</a>.
-      <b>Gemini</b> (optional, better titles and clip matching than the free fallback): free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>.</div>
-    <div class="row"><div><label>Pexels API key</label><input id="sPx" type="password"></div><div><label>Gemini API key (optional)</label><input id="sGem" type="password"></div></div>
+      <b>Gemini</b> (optional, better titles and clip matching than the free fallback): free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>.<br><b>Groq</b> (optional, recommended for speed: speech to text in seconds instead of minutes): free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>.</div>
+    <div class="row"><div><label>Pexels API key</label><input id="sPx" type="password"></div><div><label>Gemini API key (optional)</label><input id="sGem" type="password"></div><div><label>Groq API key (optional, faster)</label><input id="sGroq" type="password"></div></div>
     <div class="btns"><button class="btn" id="sKeysBtn">Save keys</button><span id="sKeysMsg" class="mute"></span></div>
     <div id="sSecrets" class="msg">Checking saved keys...</div>
     <div class="mute">For safety, GitHub never shows a saved key again, so the boxes stay empty. Type a key only to replace it.</div>
@@ -409,10 +409,11 @@ $("#sGsave").onclick=async()=>{S.gid=$("#sGid").value.trim();S.gsec=$("#sGsec").
 $("#sBridge").onclick=async()=>{try{const r=await fetch(BRIDGE+"/ping");$("#sBridgeMsg").textContent=r.ok?"✓ Bridge is running":"Bridge error"}catch(e){$("#sBridgeMsg").textContent="Not running - start tools/Start-Audio-Bridge.bat"}};
 $("#sKeysBtn").onclick=e=>busy(e.target,async()=>{try{const out=[];if($("#sPx").value.trim()){await setSecret("PEXELS_API_KEY",$("#sPx").value.trim());out.push("Pexels")}
   if($("#sGem").value.trim()){await setSecret("GEMINI_API_KEY",$("#sGem").value.trim());out.push("Gemini")}
-  $("#sPx").value=$("#sGem").value="";$("#sKeysMsg").textContent=out.length?"✓ Saved: "+out.join(", "):"Type a key first.";secretsStatus()}catch(err){$("#sKeysMsg").textContent=err.message}});
+  if($("#sGroq").value.trim()){await setSecret("GROQ_API_KEY",$("#sGroq").value.trim());out.push("Groq")}
+  $("#sPx").value=$("#sGem").value=$("#sGroq").value="";$("#sKeysMsg").textContent=out.length?"✓ Saved: "+out.join(", "):"Type a key first.";secretsStatus()}catch(err){$("#sKeysMsg").textContent=err.message}});
 async function secretsStatus(){try{const j=await gh(`${R()}/actions/secrets?per_page=100`),n=new Set((j.secrets||[]).map(x=>x.name));
   const row=(k,l,opt)=>`${n.has(k)?"✅":(opt?"➖":"❌")} ${l}${n.has(k)?" - saved":(opt?" - not set (optional)":" - missing")}`;
-  $("#sSecrets").innerHTML=[row("PEXELS_API_KEY","Pexels key"),row("GEMINI_API_KEY","Gemini key",1),row("YT_COOKIES","YouTube cookies",1)].join("<br>")+
+  $("#sSecrets").innerHTML=[row("PEXELS_API_KEY","Pexels key"),row("GEMINI_API_KEY","Gemini key",1),row("GROQ_API_KEY","Groq key (fast speech to text)",1),row("YT_COOKIES","YouTube cookies",1)].join("<br>")+
   `<br>${row("FLEET_VAULT_KEY","Vault key (made automatically when you connect the first channel)",1)}<br>YouTube connected channels: ${D.channels.filter(c=>c.yt_title).length}`}catch(e){$("#sSecrets").textContent="Cannot read saved keys: "+e.message}}
 $("#sCkBtn").onclick=e=>busy(e.target,async()=>{const f=$("#sCk").files[0];if(!f)return;try{await setSecret("YT_COOKIES",await f.text());$("#sCkMsg").textContent="✓ Saved as secret YT_COOKIES";secretsStatus()}catch(err){$("#sCkMsg").textContent=err.message}});
 $("#sTokBtn").onclick=async()=>{const t=$("#sTok").value.trim();if(!t)return;const old=S.token;S.token=t;try{await gh(R());await saveProfile();$("#sTok").value="";msg("#sTokMsg","Token saved.")}catch(e){S.token=old;msg("#sTokMsg","Token not accepted: "+e.message,1)}};

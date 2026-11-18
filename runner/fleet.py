@@ -35,7 +35,7 @@ LOCALES = {"es": "es-ES", "pt": "pt-BR", "fr": "fr-FR", "de": "de-DE", "it": "it
 GAPS = {"auto48": 48, "auto72": 72, "auto96": 96}
 AHEAD = int(os.environ.get("FLEET_AHEAD", "3"))          # scheduled videos kept waiting per channel
 PER_RUN = int(os.environ.get("FLEET_PER_RUN", "2"))      # videos per autopilot run (YouTube quota ~6 uploads/day)
-SECRETS = {k: os.environ[k] for k in ("PEXELS_API_KEY", "GEMINI_API_KEY", "YT_COOKIES", "FLEET_VAULT_KEY") if os.environ.get(k)}
+SECRETS = {k: os.environ[k] for k in ("PEXELS_API_KEY", "GEMINI_API_KEY", "GROQ_API_KEY", "YT_COOKIES", "FLEET_VAULT_KEY") if os.environ.get(k)}
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"]
 
 
@@ -257,7 +257,7 @@ def produce(it, c, state):
         avatar = repo_file(it.get("speaker")) or repo_file(c.get("avatar"))
 
         log("== 1. speech to text")
-        segments, lang = speech.transcribe(audio, total, log)
+        segments, lang = speech.transcribe(audio, total, log, SECRETS.get("GROQ_API_KEY"))
         transcript = " ".join(s["text"] for s in segments)
 
         log("== 2. new title, description, tags, hashtags (AI)")
@@ -290,7 +290,7 @@ def produce(it, c, state):
             broll.plan(scenes, queries, topic_q, px, aspect, log, report=os.path.join(work, "clip_matches.txt"))
 
         log(f"== 4. video {aspect} with subtitles + avatar ({total / 60:.1f} min)")
-        main = broll.compose(work, scenes, segments, audio, os.path.join(work, "video.mp4"), aspect, still, avatar, log=log)
+        main = broll.compose(work, scenes, segments, audio, os.path.join(work, "video.mp4"), aspect, still, avatar, log=log, px=px)
 
         log("== 5. thumbnail")
         thumb = repo_file(it.get("thumb"))
@@ -305,7 +305,7 @@ def produce(it, c, state):
             log("== 6. vertical Shorts")
             for n, (a, b) in enumerate(broll.pick_short_windows(segments, total)):
                 shorts.append(broll.compose(work, scenes, segments, audio, os.path.join(work, f"short_{n + 1}.mp4"),
-                                            "9:16", still, avatar, a, b, log, tag=f"short{n + 1}"))
+                                            "9:16", still, avatar, a, b, log, tag=f"short{n + 1}", px=px))
         shutil.rmtree(os.path.join(work, "clips"), ignore_errors=True)
 
         yt_ids = list(res.get("youtube") or [])            # a retry after the daily limit skips what is already up
