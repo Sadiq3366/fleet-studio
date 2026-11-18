@@ -120,22 +120,30 @@ def _fallback_query(text):
 
 
 def scene_queries(scenes, topic, secrets, log=print):
-    """One short ENGLISH Pexels search per scene (2-4 concrete visual words). Returns (queries, english?)."""
+    """For every scene 3 ENGLISH stock-video searches: very specific -> general. Returns (list of lists, english?)."""
     out, english = [None] * len(scenes), True
-    for b in range(0, len(scenes), 40):
-        chunk = scenes[b:b + 40]
-        lines = "\n".join(f"{i + 1}. {s['text'][:200]}" for i, s in enumerate(chunk))
-        prompt = f"""Video topic: {topic}
-For EACH numbered sentence give a stock-video search query in ENGLISH (2-4 words) that shows something CONCRETE and
-filmable matching the meaning (people, places, actions, objects, emotions). Avoid abstract words. Vary them.
-Return JSON: {{"q": ["query 1", "query 2", ...]}} with exactly {len(chunk)} items.
+    for b in range(0, len(scenes), 30):
+        chunk = scenes[b:b + 30]
+        lines = "\n".join(f"{i + 1}. {s['text'][:220]}" for i, s in enumerate(chunk))
+        prompt = f"""You choose stock footage (Pexels) for a narrated video. Topic: {topic}
+For EACH numbered sentence write 3 ENGLISH search queries for a video clip that SHOWS what the sentence means:
+ - query 1: very specific and literal (who / what / action / place), 3-5 words, e.g. "man running on beach at sunrise"
+ - query 2: simpler, 2-3 words, e.g. "man running"
+ - query 3: the emotion or concept as a visible scene, 2-3 words, e.g. "sunrise motivation"
+Rules: only things a camera can film; for abstract ideas use a concrete visual metaphor (success -> "climber reaching summit");
+keep the person's gender/age if the sentence says it; use the sentences around for context; never use names or brands.
+Return JSON: {{"q": [["q1","q2","q3"], ...]}} with exactly {len(chunk)} items, same order.
 {lines}"""
         j = llm_json(prompt, secrets, log) or {}
         qs = j.get("q") if isinstance(j, dict) else j
         for i in range(len(chunk)):
-            q = qs[i] if isinstance(qs, list) and i < len(qs) and isinstance(qs[i], str) and qs[i].strip() else None
-            if not q:
+            item = qs[i] if isinstance(qs, list) and i < len(qs) else None
+            if isinstance(item, str):
+                item = [item]
+            item = [x.strip()[:60] for x in (item or []) if isinstance(x, str) and x.strip()]
+            if not item:
                 english = False
-            out[b + i] = (q or _fallback_query(chunk[i]["text"])).strip()[:60]
+                item = [_fallback_query(chunk[i]["text"])]
+            out[b + i] = item
         time.sleep(3)
     return out, english

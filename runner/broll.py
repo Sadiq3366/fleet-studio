@@ -6,6 +6,8 @@ import time
 import urllib.parse
 import urllib.request
 
+import numpy as np
+
 import render
 import speech
 
@@ -98,22 +100,74 @@ class Pexels:
         return p if os.path.isfile(p) else None
 
 
-def plan(scenes, queries, topic_q, px, aspect, log=print):
-    """Attach a clip to every scene."""
+def plan(scenes, queries, topic_q, px, aspect, log=print, report=None):
+    """Attach the best-matching clip to every scene.
+    queries[i] = 1-3 search phrases (specific -> general). With the CLIP matcher every candidate clip is judged by its
+    preview frames against the spoken sentence; without it the first unused search result is taken."""
     orient = "landscape" if aspect == "16:9" else "portrait"
     need = 1920 if aspect == "16:9" else 1080
-    last = None
-    for i, (s, q) in enumerate(zip(scenes, queries)):
-        words = q.split()
-        tries = [q] + ([" ".join(words[:2])] if len(words) > 2 else []) + ([words[0]] if words else []) + [topic_q]
-        clip, dur, used = px.pick([t for t in tries if t], orient, need) if px else (None, 0, 0)
-        if not clip:
-            clip, dur, used = last if last else (None, 0, 0)
-        s.update(clip=clip, clip_dur=dur, query=q, offset=((used - 1) * 4.0) % max(1.0, dur - (s["end"] - s["start"])) if dur else 0)
-        if clip:
-            last = (clip, dur, used)
+    try:
+        import match
+        m = match.Matcher(log)
+    except Exception as e:                            # noqa: BLE001
+        m = None
+        log(f"  visual matching not available ({str(e)[:100]}) - using search order")
+    seen = {}                                         # every clip found so far (pool for when the API budget is used up)
+    prev_id, scores, lines = None, [], []
+    sent_emb = m.text([s["text"] or topic_q for s in scenes]) if m else None
+    for i, (s, qs) in enumerate(zip(scenes, queries)):
+        qs = [q for q in (qs if isinstance(qs, list) else [qs]) if q] or [topic_q]
+        pool = {}
+        budget = int(os.environ.get("PEXELS_MAX_CALLS", "180")) - px.calls
+        k = max(1, min(3, budget // max(1, len(scenes) - i)))      # spread the free API budget over all scenes
+        for q in qs[:k] + [topic_q]:
+            for v in px.search(q, orient):
+                pool.setdefault(v["id"], v)
+                seen.setdefault(v["id"], v)
+            if len(pool) >= 30 or (q != topic_q and len(pool) >= 15 and not m):
+                break
+        if len(pool) < 8:                             # API budget used up -> best of everything found so far
+            pool.update(dict(list(seen.items())[-80:]))
+        if not pool:
+            s.update(clip=None, clip_dur=0, query=qs[0], offset=0)
+            continue
+        cands = list(pool.values())
+        d = s["end"] - s["start"]
+        if m:
+            emb = m.images(cands)
+            q_emb = m.text(qs)
+            slugs = [match.slug(v) for v in cands]
+            sl_emb = m.text([x or "video" for x in slugs])
+            best, best_sc = None, -9
+            for v, sl, se in zip(cands, slugs, sl_emb):
+                e = emb.get(v["id"])
+                if e is None:
+                    continue
+                sc = 0.45 * float(e @ sent_emb[i]) + 0.35 * float(np.max(q_emb @ e)) + 0.20 * float(se @ sent_emb[i])
+                sc -= 0.015 * px.used.get(v["id"], 0) + (0.05 if v["id"] == prev_id else 0)
+                sc += 0.01 if v.get("duration", 0) >= d else 0
+                if sc > best_sc:
+                    best, best_sc = v, sc
+            v = best or cands[0]
+            scores.append(best_sc)
+        else:
+            v = sorted(cands, key=lambda c: (px.used.get(c["id"], 0), c["id"] == prev_id))[0]
+        px.used[v["id"]] = px.used.get(v["id"], 0) + 1
+        clip = px.download(v, need)
+        dur = v.get("duration", 10)
+        s.update(clip=clip, clip_dur=dur, query=qs[0],
+                 offset=((px.used[v["id"]] - 1) * 4.0) % max(1.0, dur - d) if dur else 0)
+        prev_id = v["id"]
+        lines.append(f"{s['start']:7.1f}s  [{(scores[-1] if m and scores else 0):.3f}]  {s['text'][:90]}\n"
+                     f"           search: {' | '.join(qs)}\n           clip:   {match.slug(v) if m else v.get('url')}  {v.get('url')}\n")
         if (i + 1) % 25 == 0:
-            log(f"  clips {i + 1}/{len(scenes)} (pexels calls {px.calls if px else 0})")
+            log(f"  clips {i + 1}/{len(scenes)} (pexels calls {px.calls}"
+                + (f", match score {np.mean(scores[-25:]):.3f})" if scores else ")"))
+    if report:
+        with open(report, "w", encoding="utf-8") as f:
+            f.write("Which clip was chosen for which sentence (score: higher = better match)\n\n" + "\n".join(lines))
+    if scores:
+        log(f"  average match score {np.mean(scores):.3f}")
     return scenes
 
 

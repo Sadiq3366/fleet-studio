@@ -274,7 +274,7 @@ def produce(it, c, state):
             queries, english = ai.scene_queries(scenes, meta["title"], SECRETS, log)
             if not english:
                 px.locale = LOCALES.get(lang)
-            broll.plan(scenes, queries, topic_q, px, aspect, log)
+            broll.plan(scenes, queries, topic_q, px, aspect, log, report=os.path.join(work, "clip_matches.txt"))
 
         log(f"== 4. video {aspect} with subtitles + avatar ({total / 60:.1f} min)")
         main = broll.compose(work, scenes, segments, audio, os.path.join(work, "video.mp4"), aspect, still, avatar, log=log)
@@ -341,7 +341,7 @@ def produce(it, c, state):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["produce", "autopilot", "import"])
+    ap.add_argument("mode", choices=["produce", "autopilot", "import", "test"])
     ap.add_argument("--item")
     ap.add_argument("--channel")
     ap.add_argument("--handle")
@@ -352,6 +352,23 @@ def main():
     state = rj("state.json", {})
     state.setdefault("channels", {})
     state.setdefault("items", {})
+
+    if a.mode == "test":                                  # sample video, no upload: check clip matching quality
+        text = a.handle or ("La disciplina es el puente entre tus metas y tus logros. Cada mañana un hombre sale a correr "
+                            "por la playa antes del amanecer. Una mujer estudia en la biblioteca con sus libros abiertos. "
+                            "Los grandes campeones entrenan en el gimnasio todos los días. Cuando sientas que quieres "
+                            "rendirte, mira a tu familia y recuerda por qué empezaste. El éxito es como subir una montaña: "
+                            "paso a paso hasta llegar a la cima.")
+        os.makedirs(os.path.join(ROOT, "inbox"), exist_ok=True)
+        voice = os.environ.get("TEST_VOICE") or "es-MX-JorgeNeural"
+        subprocess.run([sys.executable, "-m", "edge_tts", "--voice", voice, "--text", text,
+                        "--write-media", os.path.join(ROOT, "inbox", "test-audio.mp3")], check=True)
+        it = {"id": "test", "channel_id": "test", "audio": "inbox/test-audio.mp3", "aspect": "16:9", "shorts": False,
+              "upload": False, "background": "pexels", "title": ""}
+        ok = produce(it, {"id": "test", "name": "test"}, state)
+        log = state["items"]["test"].get("log", [])
+        summary("Test video and clip_matches.txt are in this run's Artifacts.\n\n```\n" + "\n".join(log[-25:]) + "\n```")
+        sys.exit(0 if ok else 1)
 
     if a.mode == "import":
         c = channels[a.channel]

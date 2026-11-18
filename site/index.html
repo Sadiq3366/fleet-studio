@@ -102,6 +102,14 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
     <div class="btns"><button class="btn" id="iGo">Import all videos</button></div>
     <div id="iMsg"></div>
   </div>
+  <div class="card">
+    <h3>Test clip matching (no upload)</h3>
+    <div class="mute">The cloud reads your text with an AI voice, picks a Pexels clip for every sentence, and makes a short test video plus <b>clip_matches.txt</b>, which lists which clip was chosen for which sentence and its match score. Leave the box empty to use a Spanish sample.</div>
+    <label>Text (optional)</label><input id="tText" placeholder="Write 4-6 sentences like your videos...">
+    <label>Voice</label><select id="tVoice"><option value="es-MX-JorgeNeural">Spanish (Mexico) - male</option><option value="es-ES-ElviraNeural">Spanish (Spain) - female</option>
+      <option value="en-US-GuyNeural">English - male</option><option value="hi-IN-MadhurNeural">Hindi - male</option><option value="ur-PK-AsadNeural">Urdu - male</option><option value="pt-BR-AntonioNeural">Portuguese - male</option></select>
+    <div class="btns"><button class="btn sec" id="tGo">Run test in the cloud</button><span id="tMsg" class="mute"></span></div>
+  </div>
 </section>
 
 <section id="t-queue" class="hide">
@@ -335,6 +343,8 @@ $("#iGo").onclick=e=>busy(e.target,async()=>{try{const c=D.channels.find(x=>x.id
   const h=$("#iHandle").value.trim()||c.reference;if(!h)throw new Error("Type the reference channel.");
   await dispatch({mode:"import",channel:c.id,handle:h,title:`${c.name} <- ${h}`.slice(0,80)});msg("#iMsg","Import started in the cloud. The queue fills in about 1 minute.")}catch(err){msg("#iMsg",err.message,1)}});
 
+$("#tGo").onclick=e=>busy(e.target,async()=>{try{await dispatch({mode:"test",handle:$("#tText").value.trim().slice(0,1500),voice:$("#tVoice").value,title:"clip matching test"});
+  $("#tMsg").innerHTML=`Started. In about 5-8 minutes open <b>Cloud runs</b>, then the run, then <b>Artifacts</b>, and download the video and clip_matches.txt.`}catch(err){$("#tMsg").textContent=err.message}});
 /* queue */
 $("#qChan").onchange=draw;
 window.runItem=id=>busy(null,async()=>{try{const it=D.queue.find(x=>x.id===id);
