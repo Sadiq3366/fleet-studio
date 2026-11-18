@@ -247,7 +247,7 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
     used, prev, lines, scores, credits = {}, None, [], [], {}
     bad, failed, films_off = set(), [0], [False]
     txt_cache = {}
-    series_used, prev_series = {}, None
+    series_used, prev_series, recent_ids = {}, None, []
     TOP_VISUAL = int(os.environ.get("DOC_TOP_VISUAL", "8"))
     folder = os.path.join(os.environ.get("FLEET_WORK") or ".", "seg_dl", "x")
 
@@ -291,11 +291,17 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
                 cands += pexels_cands(px, info.get("topic_stock") or "documentary", orient)
         except Exception as e:                        # one bad search must not stop the documentary
             log(f"  scene {i + 1}: search problem ({str(e)[:100]}) - using what was found")
-        cands = [c for c in {c["id"]: c for c in cands}.values() if hd_landscape(c)]
-        if names:                                     # sentence about a person -> only pictures of that person
+        year = p.get("year")
+        wrong_era = lambda c: bool(year and c.get("year") and abs(int(year) - c["year"]) > 15)
+        recent = set(recent_ids[-3:])
+        cands = [c for c in {c["id"]: c for c in cands}.values()
+                 if hd_landscape(c) and not wrong_era(c) and c["id"] not in recent]
+        if names:                                     # about a person: show them - if a photo of the right time exists
             named = [c for c in cands if _names_in(c["text"], names)]
             if named:
                 cands = named
+            elif p.get("stock") and px:               # no fitting photo of the person: matching place/event/stock
+                cands += pexels_cands(px, p["stock"], orient)
         if not cands and px:                           # nothing HD of it -> matching HD stock video
             cands = pexels_cands(px, p.get("stock") or info.get("topic_stock") or "documentary", orient)
         if not cands:
@@ -355,6 +361,7 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
                 continue
             c, best_sc = pex[0], 0.0
         used[c["id"]] = used.get(c["id"], 0) + 1
+        recent_ids.append(c["id"])
         series_used[_series(c)] = series_used.get(_series(c), 0) + 1
         prev_series = _series(c)
         prev = c["id"]
