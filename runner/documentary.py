@@ -157,7 +157,7 @@ class Sources:
         return out
 
 
-MIN_W = int(os.environ.get("DOC_MIN_WIDTH", "1200"))
+MIN_W = int(os.environ.get("DOC_MIN_WIDTH", "640"))   # matching matters more than resolution
 MIN_RATIO = float(os.environ.get("DOC_MIN_RATIO", "1.3"))      # 4:3 or wider -> fills a 16:9 screen (small crop)
 
 
