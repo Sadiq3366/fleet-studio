@@ -131,6 +131,8 @@ class Sources:
         if key in self.cache:
             return self.cache[key]
         out = []
+        if getattr(self, "ov_fail", 0) >= 3:            # Openverse is down today -> stop waiting for it
+            return out
         try:
             j = _get("https://api.openverse.org/v1/images/?" + urllib.parse.urlencode(
                 {"q": query, "page_size": limit, "license_type": "commercial,modification", "mature": "false"}))
@@ -144,6 +146,7 @@ class Sources:
                                       f"({(r.get('license') or '').upper()} {r.get('license_version') or ''}, {r.get('source')})",
                             "source": "openverse"})
         except Exception as e:                           # noqa: BLE001
+            self.ov_fail = getattr(self, "ov_fail", 0) + 1
             self.log(f"  openverse '{query}': {str(e)[:80]}")
         self.cache[key] = out
         return out
@@ -203,7 +206,7 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         if name in pools:
             return pools[name]
         c = []
-        for q in (name, f"{name} portrait", f"{name} performing"):
+        for q in (name, f"{name} portrait"):
             c += [x for x in src.commons(q, "image", 50) if _names_in(x["text"], names)]
         c += [x for x in src.commons(name, "video") if _names_in(x["text"], names)]
         c += [x for x in src.openverse(name) if _names_in(x["text"], names)]
@@ -218,6 +221,8 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
     sent_emb = m.text([s["text"] or subject for s in scenes])
     used, prev, lines, scores, credits = {}, None, [], [], {}
     bad, failed = set(), [0]
+    txt_cache = {}
+    TOP_VISUAL = int(os.environ.get("DOC_TOP_VISUAL", "8"))
     folder = os.path.join(os.environ.get("FLEET_WORK") or ".", "seg_dl", "x")
 
     def _ready(cand, folder):
@@ -245,11 +250,8 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         try:
             if names:
                 cands += person_pool(subject if is_subject else who, names if is_subject else _aliases(who, []))
-                if p.get("archive"):
-                    cands += [x for x in src.commons(p["archive"], "image") if _names_in(x["text"], names)]
-            if p.get("archive"):
-                cands += src.commons(p["archive"], "image", 20)
-                cands += src.commons(p["archive"], "video", 10)
+            if p.get("archive"):                          # ONE paced Wikimedia search per sentence (was 3)
+                cands += src.commons(p["archive"], "image", 30)
                 if not names:
                     cands += src.openverse(p["archive"], 15)
             if p.get("stock") and (not names or len(cands) < 6):
@@ -262,8 +264,19 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         if not cands:
             s.update(clip=None, image=None)
             continue
-        emb = m.images(cands)
         q_emb = m.text([x for x in (p.get("archive"), p.get("stock")) if x] or [s["text"]])
+        # fast pre-selection by title/description (no downloads); only the best few get the visual check
+        new = [c for c in cands if c["id"] not in txt_cache]
+        if new:
+            txt_cache.update(zip([c["id"] for c in new], m.text([c["text"][:200] for c in new])))
+        def pre(c):
+            t = txt_cache[c["id"]]
+            v = float(t @ sent_emb[i]) + 0.5 * float(np.max(q_emb @ t))
+            v += 0.15 if names and _names_in(c["text"], names) else 0
+            v -= 0.05 * used.get(c["id"], 0)
+            return v
+        cands = sorted(cands, key=pre, reverse=True)[:TOP_VISUAL]
+        emb = m.images(cands)
         no_pic = [c for c in cands if emb.get(c["id"]) is None]
         txt_emb = dict(zip([c["id"] for c in no_pic], m.text([c["text"][:200] for c in no_pic]))) if no_pic else {}
         year = p.get("year")
