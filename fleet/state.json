@@ -8,10 +8,11 @@
    ]
   },
   "50ab3e4e36ea": {
-   "last_slot": "2026-11-22T13:17:00+00:00",
+   "last_slot": "2026-11-26T13:17:00+00:00",
    "slots": [
     "2026-11-18T13:17:00+00:00",
-    "2026-11-22T13:17:00+00:00"
+    "2026-11-22T13:17:00+00:00",
+    "2026-11-26T13:17:00+00:00"
    ]
   }
  },
@@ -283,6 +284,73 @@
     "  uploaded https://youtu.be/L0mS3QdxIAA (public at 2026-11-23 21:17 UTC)",
     "  uploading short_2.mp4 (4 MB)",
     "  uploaded https://youtu.be/kxsBgwAqxOs (public at 2026-11-25 05:17 UTC)"
+   ]
+  },
+  "95728f731717": {
+   "status": "done",
+   "run": "44408165872",
+   "started": "2026-11-18T22:07:42+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "7o8o8T5ahUg",
+     "publish": "2026-11-26T13:17:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "8z22YkN1jnM",
+     "publish": "2026-11-27T21:17:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "-_xLecXEpRI",
+     "publish": "2026-11-29T05:17:00+00:00"
+    }
+   ],
+   "finished": "2026-11-18T23:11:41+00:00",
+   "title": "The Secret Finance of Nazi Germany",
+   "log": [
+    "  scenes 275/292, match score 0.193",
+    "  historians: 36 real HD landscape photos, 15 real film clips found",
+    "  52 archive files could not be downloaded - the next best real photo was used instead",
+    "  average match score -0.895; 122 photos, 100 film clips",
+    "== 4. video 16:9 with subtitles + music (44.3 min)",
+    "  main: 292 scenes, 44.3 min, 4 at a time (superfast)",
+    "  main: 40/292 scenes ready",
+    "  main: 80/292 scenes ready",
+    "  main: 120/292 scenes ready",
+    "  main: 160/292 scenes ready",
+    "  main: 200/292 scenes ready",
+    "  main: 240/292 scenes ready",
+    "  main: 280/292 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1042 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 22%",
+    "  upload 32%",
+    "  upload 43%",
+    "  upload 53%",
+    "  upload 64%",
+    "  upload 74%",
+    "  upload 85%",
+    "  upload 96%",
+    "  uploaded https://youtu.be/7o8o8T5ahUg (public at 2026-11-26 13:17 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (4 MB)",
+    "  uploaded https://youtu.be/8z22YkN1jnM (public at 2026-11-27 21:17 UTC)",
+    "  uploading short_2.mp4 (4 MB)",
+    "  uploaded https://youtu.be/-_xLecXEpRI (public at 2026-11-29 05:17 UTC)"
    ]
   }
  }
