@@ -176,6 +176,18 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
     <label>cookies.txt</label><input type="file" id="sCk" accept=".txt">
     <div class="btns"><button class="btn sec" id="sCkBtn">Save as secret</button><span id="sCkMsg" class="mute"></span></div>
   </div>
+  <div class="card" id="uCard">
+    <h3>Users (admin)</h3>
+    <div class="mute">Create a login for family and friends. They open this same website link on any phone or PC, choose their name and type their password. They need no GitHub account.
+      A <b>Channel owner</b> sees only channels whose "Owner portal" is their username. An <b>Admin</b> sees everything.</div>
+    <div id="uList" class="msg">Loading...</div>
+    <div class="row">
+      <div><label>Username</label><input id="uName" placeholder="ali"></div>
+      <div><label>Password (10+ characters, letters and numbers)</label><input id="uPw" type="text" autocomplete="off"></div>
+      <div><label>Role</label><select id="uRole"><option value="owner">Channel owner</option><option value="admin">Admin</option></select></div>
+    </div>
+    <div class="btns"><button class="btn" id="uAdd">Create / change user</button><span id="uMsg" class="mute"></span></div>
+  </div>
   <div class="card">
     <h3>Profile</h3>
     <label>Update cloud access token</label><input id="sTok" type="password" placeholder="github_pat_...">
@@ -196,11 +208,16 @@ const rid=()=>[...crypto.getRandomValues(new Uint8Array(6))].map(b=>b.toString(1
 /* ---------- profiles: encrypted in this browser (PBKDF2 + AES-GCM) ---------- */
 const store={get(){try{return JSON.parse(localStorage.getItem("fleet_profiles")||"{}")}catch(e){return{}}},set(p){try{localStorage.setItem("fleet_profiles",JSON.stringify(p))}catch(e){}}};
 const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))), unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-async function keyFor(pin,salt){const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pin),"PBKDF2",false,["deriveKey"]);
-  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:250000,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
-async function seal(pin,obj){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
-  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},await keyFor(pin,salt),new TextEncoder().encode(JSON.stringify(obj)));return{salt:b64(salt),iv:b64(iv),ct:b64(ct)}}
-async function unseal(pin,e){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(e.iv)},await keyFor(pin,unb64(e.salt)),unb64(e.ct));return JSON.parse(new TextDecoder().decode(pt))}
+async function keyFor(pin,salt,it){const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pin),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:it||250000,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function seal(pin,obj,it){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));it=it||250000;
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},await keyFor(pin,salt,it),new TextEncoder().encode(JSON.stringify(obj)));return{salt:b64(salt),iv:b64(iv),ct:b64(ct),it}}
+async function unseal(pin,e){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(e.iv)},await keyFor(pin,unb64(e.salt),e.it),unb64(e.ct));return JSON.parse(new TextDecoder().decode(pt))}
+/* users created by an admin live in fleet/users.json (public repo -> strongly encrypted, strong passwords only) */
+const SITE_REPO=(()=>{const h=location.hostname.match(/^([\w-]+)\.github\.io$/),seg=location.pathname.split("/").filter(Boolean)[0];return h&&seg?`${h[1]}/${seg}`:null})();
+let CLOUD_USERS={};
+async function cloudUsers(repo){try{const r=await fetch(`https://api.github.com/repos/${repo}/contents/fleet/users.json`,{cache:"no-store",headers:{Accept:"application/vnd.github.raw"}});
+  return r.ok?await r.json():{}}catch(e){return{}}}
 async function saveProfile(){const p=store.get();p[S.user]=await seal(PIN,S);store.set(p);try{sessionStorage.setItem("fleet_session",JSON.stringify({S,PIN}))}catch(e){}}
 
 /* ---------- GitHub API ---------- */
@@ -229,11 +246,15 @@ async function setSecret(name,value){sodiumP=sodiumP||import("https://cdn.jsdeli
   await gh(`${R()}/actions/secrets/${name}`,{method:"PUT",body:JSON.stringify({encrypted_value:enc,key_id:k.key_id})})}
 
 /* ---------- login ---------- */
-function loginView(){const p=Object.keys(store.get());$("#lu").innerHTML=p.map(u=>`<option>${esc(u)}</option>`).join("");
+async function loginView(){if(SITE_REPO)CLOUD_USERS=await cloudUsers(SITE_REPO);const p=[...new Set([...Object.keys(store.get()),...Object.keys(CLOUD_USERS)])];$("#lu").innerHTML=p.map(u=>`<option>${esc(u)}</option>`).join("");
   $("#loginForm").classList.toggle("hide",!p.length);$("#newForm").classList.toggle("hide",!!p.length);$("#loginBox").classList.remove("hide");$("#appBox").classList.add("hide")}
 $("#toNew").onclick=()=>{$("#loginForm").classList.add("hide");$("#newForm").classList.remove("hide")};
 $("#toLogin").onclick=()=>loginView();
-$("#loginBtn").onclick=async()=>{try{S=await unseal($("#lp").value,store.get()[$("#lu").value]);PIN=$("#lp").value;await saveProfile();start()}catch(e){msg("#loginMsg","Wrong password / PIN.",1)}};
+$("#loginBtn").onclick=async e=>{const u=$("#lu").value,pw=$("#lp").value;e.target.disabled=true;msg("#loginMsg","Checking...");
+  try{const local=store.get()[u];if(local){try{S=await unseal(pw,local)}catch(x){S=null}}
+    if(!S&&CLOUD_USERS[u]){S=await unseal(pw,CLOUD_USERS[u].sealed);S.cloud=true}
+    if(!S)throw 0;PIN=pw;if(!S.cloud)await saveProfile();else try{sessionStorage.setItem("fleet_session",JSON.stringify({S,PIN}))}catch(x){}start()}
+  catch(x){S=null;msg("#loginMsg","Wrong password / PIN.",1)}e.target.disabled=false};
 $("#lp").onkeydown=e=>{if(e.key==="Enter")$("#loginBtn").click()};
 $("#newBtn").onclick=async()=>{const u=$("#nu").value.trim().toLowerCase(),p=$("#np").value,repo=$("#nrepo").value.trim().replace(/^https:\/\/github.com\//,"").replace(/\/$/,""),tok=$("#ntok").value.trim();
   if(!/^[a-z0-9_.-]{2,32}$/.test(u)||p.length<4||!/^[\w.-]+\/[\w.-]+$/.test(repo)||!tok)return msg("#loginMsg","Fill username, PIN (4+ characters), repository owner/name and token.",1);
@@ -250,7 +271,7 @@ async function start(){$("#loginBox").classList.add("hide");$("#appBox").classLi
   $("#sRepoLink").href=`https://github.com/${S.repo}`;$("#sActLink").href=`https://github.com/${S.repo}/actions`;
   try{const r=await gh(R());BRANCH=r.default_branch;$("#sRepo").textContent=`Connected to ${S.repo} (${r.private?"private: 2,000 free minutes/month":"public: unlimited free minutes"}).`}
   catch(e){$("#sRepo").textContent="Cannot reach the repository: "+e.message}
-  await googleReturn();load();secretsStatus();setInterval(load,15000)}
+  await googleReturn();await load();secretsStatus();usersView().catch(()=>{});setInterval(load,15000)}
 async function load(){try{const [c,q,s,runs]=await Promise.all([getJSON("fleet/channels.json",[]),getJSON("fleet/queue.json",[]),getJSON("fleet/state.json",{channels:{},items:{}}),
   gh(`${R()}/actions/runs?per_page=25`).catch(()=>({workflow_runs:[]}))]);
   D={channels:c.data,queue:q.data,state:{channels:{},items:{},...s.data},runs:runs.workflow_runs||[]};draw()}catch(e){msg("#cTopMsg","Loading failed: "+e.message,1)}}
@@ -375,6 +396,17 @@ async function secretsStatus(){try{const j=await gh(`${R()}/actions/secrets?per_
   `<br>YouTube connected channels: ${[...n].filter(x=>x.startsWith("YT_TOKEN_")).length}`}catch(e){$("#sSecrets").textContent="Cannot read saved keys: "+e.message}}
 $("#sCkBtn").onclick=e=>busy(e.target,async()=>{const f=$("#sCk").files[0];if(!f)return;try{await setSecret("YT_COOKIES",await f.text());$("#sCkMsg").textContent="✓ Saved as secret YT_COOKIES";secretsStatus()}catch(err){$("#sCkMsg").textContent=err.message}});
 $("#sTokBtn").onclick=async()=>{const t=$("#sTok").value.trim();if(!t)return;const old=S.token;S.token=t;try{await gh(R());await saveProfile();$("#sTok").value="";msg("#sTokMsg","Token saved.")}catch(e){S.token=old;msg("#sTokMsg","Token not accepted: "+e.message,1)}};
+async function usersView(){if(S.role!=="admin"){$("#uCard").classList.add("hide");return}
+  const {data}=await getJSON("fleet/users.json",{});const names=Object.keys(data);
+  $("#uList").innerHTML=names.length?names.map(n=>`<div style="padding:4px 0">👤 <b>${esc(n)}</b> <span class="mute">${data[n].role==="admin"?"Admin":"Channel owner"} · channels: ${D.channels.filter(c=>c.owner===n).map(c=>esc(c.name)).join(", ")||"none yet"}</span> <button class="btn sec sm" onclick="delUser('${esc(n)}')">Remove</button></div>`).join(""):"No users yet."}
+$("#uAdd").onclick=e=>busy(e.target,async()=>{const n=$("#uName").value.trim().toLowerCase(),pw=$("#uPw").value,role=$("#uRole").value;
+  if(!/^[a-z0-9_.-]{2,32}$/.test(n))return $("#uMsg").textContent="Username: 2-32 letters/numbers.";
+  if(pw.length<10||!/[a-zA-Z]/.test(pw)||!/\d/.test(pw))return $("#uMsg").textContent="Password needs 10+ characters with letters and numbers.";
+  $("#uMsg").textContent="Encrypting...";
+  const sealed=await seal(pw,{user:n,role,repo:S.repo,token:S.token,gid:S.gid||"",gsec:S.gsec||""},600000);
+  await mutate("fleet/users.json",{},u=>{u[n]={role,sealed,by:S.user,created:new Date().toISOString()}},`user ${n}`);
+  $("#uName").value=$("#uPw").value="";$("#uMsg").textContent=`✓ User "${n}" ready. Send them the website link + their password. Set "Owner portal" = ${n} on their channels.`;usersView()});
+window.delUser=n=>busy(null,async()=>{if(!confirm(`Remove user ${n}?`))return;await mutate("fleet/users.json",{},u=>{delete u[n]},`remove user ${n}`);usersView()});
 $("#sDelProfile").onclick=()=>{if(!confirm("Remove this profile from this browser? (The repository is not touched.)"))return;const p=store.get();delete p[S.user];store.set(p);$("#logout").click()};
 
 /* boot: keep the session for this tab (needed when Google sends you back) */
