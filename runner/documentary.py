@@ -33,7 +33,8 @@ BLOCKED = re.compile(r"\b(" + "|".join(re.escape(k) for k in [
 JUNK = re.compile(r"\b(logo|icon|signature|map of|diagram|chart|flag of|coat of arms|stamp|coin|poster template|"
                   r"screenshot|svg|seal of|emblem|licen[cs]e|driver|autograph|autographed|passport|certificate|"
                   r"id card|identity card|document|form|receipt|letter to|tmz|meme|fan art|fanart|cartoon|caricature|"
-                  r"wax figure|wax statue|madame tussaud|lookalike|impersonator)\b", re.I)
+                  r"wax figure|wax statue|madame tussaud|lookalike|impersonator|sprite|sprites|video game|videogame|"
+                  r"pixel art|8-bit|16-bit|moonwalker|arcade|sega|nintendo|game screenshot)\b", re.I)
 
 
 _LAST = {"t": 0.0}
@@ -247,7 +248,8 @@ def plan(scenes, info, per, px, aspect, log=print, report=None):
         person_pool(subject, aliases)
     sent_emb = m.text([s["text"] or subject for s in scenes])
     doc_neg = m.text(["a scanned document or form with printed text", "a handwritten signature or autograph on paper",
-                      "an ID card or driver's license", "a screenshot of a website or a newspaper page"])
+                      "an ID card or driver's license", "a screenshot of a website or a newspaper page",
+                      "video game graphics, pixel art sprites", "a cartoon or drawing"])
     doc_pos = m.text(["a photograph of a person", "a photograph of people at an event", "a photograph of a place or building",
                       "a photograph of a stage concert"])
     used, prev, lines, scores, credits = {}, None, [], [], {}
