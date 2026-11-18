@@ -264,7 +264,7 @@ def produce(it, c, state):
         if not audio:
             log("== getting audio from the reference video")
             audio = ytdlp(it["ref_url"], work, "audio", log)
-        total = render.duration(audio)
+        total = render.audio_length(audio, log)
         if total < 1:
             raise RuntimeError("the audio file is empty or broken")
         ref_th = ref_thumb(it["video_id"], work) if it.get("video_id") else None

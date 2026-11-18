@@ -414,3 +414,20 @@ def thumbnail_v2(work, text, avatar=None, name=None, out=None, log=print, seed="
     bg.save(out, "JPEG", quality=92)
     log("thumbnail made")
     return out
+
+
+def audio_length(path, log=print):
+    """Real length of the audio, measured by decoding it (very fast). Some MP3s claim a wrong length in their header
+    (e.g. '44 min' while only 9 min of sound are inside) - trusting the header made empty pieces and wasted time."""
+    claimed = duration(path)
+    try:
+        p = subprocess.run([FFMPEG, "-hide_banner", "-nostats", "-i", path, "-map", "0:a:0", "-f", "null", "-",
+                            "-progress", "pipe:1"], capture_output=True, text=True, timeout=900, creationflags=NO_WINDOW)
+        ms = [int(x) for x in re.findall(r"out_time_us=(\d+)", p.stdout)]
+        real = (max(ms) / 1e6) if ms else 0.0
+    except Exception:                                  # noqa: BLE001
+        real = 0.0
+    if real > 1 and abs(real - claimed) > 5:
+        log(f"  NOTE: the audio file says {claimed / 60:.1f} min but really contains {real / 60:.1f} min - "
+            f"using {real / 60:.1f} min (check your MP3 if this is not what you expected)")
+    return real if real > 1 else claimed
