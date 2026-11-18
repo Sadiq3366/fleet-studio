@@ -82,8 +82,9 @@ Return JSON with keys:
 "title": a NEW viral title about the same topic as the reference: curiosity gap or strong emotion, max 60 characters,
    do NOT copy the reference title - use different words and a different angle (no more than 2 words in common),
 "alt_titles": 3 more different viral title options, max 60 characters each,
-"thumbnail_text": 3 to 6 powerful words for the thumbnail that create curiosity or emotion (like a shocking
-   statement or a secret), same language, NO symbols, NO numbers, NO emojis, NO hashtags,
+"thumbnail_text": ONE complete hook sentence of 7 to 12 words for the thumbnail, same language, that makes people
+   NEED to click - a consequence, a secret or a warning, e.g. "Si ambos dejan de contactarse, esto es lo que terminará
+   pasando" or "El silencio revela la verdad que nadie quiere ver". NO symbols, NO numbers, NO emojis, NO hashtags,
 "highlight_words": the 1-2 most powerful words of thumbnail_text,
 "description": 3 short paragraphs (hook, what they will learn, call to subscribe) - no hashtags inside,
 "chapters": list of {{"time":"m:ss","title":"..."}} with first time "0:00", 5-12 chapters, only if length > 3 minutes, else [],

@@ -325,8 +325,11 @@ def produce(it, c, state):
                 photo = tmp["image_file"] if broll._fetch_image(tmp, os.path.join(work, "x")) else None
             if not photo and px:
                 photo = px.photo(topic_q)
-            thumb = render.thumbnail(work, meta["thumbnail_text"], photo, ref_th, avatar, meta.get("highlight"), log=log,
-                                     name=(c.get("speaker") or "").strip() or None, solid=(style != "documentary"))
+            if style != "documentary":                 # reference style: avatar left, hook sentence right, name
+                thumb = render.thumbnail_v2(work, meta["thumbnail_text"], avatar, (c.get("speaker") or "").strip() or None,
+                                            log=log, seed=it["id"])
+            else:
+                thumb = render.thumbnail(work, meta["thumbnail_text"], photo, ref_th, avatar, meta.get("highlight"), log=log)
 
         shorts = []
         if it.get("shorts"):

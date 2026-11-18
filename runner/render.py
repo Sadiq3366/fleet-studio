@@ -290,3 +290,118 @@ def cutout(path, work, log=print):
     except Exception as e:                          # noqa: BLE001
         log(f"  background removal not available ({str(e)[:120]}) - using the avatar as it is")
         return path
+
+
+# ------------------------------------------------------------------ viral thumbnail v2 (reference style)
+def _serif(size):
+    for f in (os.path.join(HERE, "PlayfairDisplay-Black.ttf"), r"C:\Windows\Fonts\georgiab.ttf",
+              "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", r"C:\Windows\Fonts\timesbd.ttf"):
+        if os.path.isfile(f):
+            return ImageFont.truetype(f, size)
+    return _font(size)
+
+
+def _split_lines(words, n):
+    """n lines with about the same number of letters (keeps short words like DE/LO with the next one)."""
+    total = sum(len(w) for w in words) + len(words)
+    out, cur, cur_len = [], [], 0
+    for i, w in enumerate(words):
+        cur.append(w)
+        cur_len += len(w) + 1
+        left_lines = n - len(out) - 1
+        if left_lines > 0 and cur_len >= total / n and len(words) - i - 1 >= left_lines:
+            out.append(cur)
+            cur, cur_len = [], 0
+    if cur:
+        out.append(cur)
+    return out
+
+
+def thumbnail_v2(work, text, avatar=None, name=None, out=None, log=print, seed=""):
+    """Reference style: big avatar LEFT with a warm glow, a whole hook sentence RIGHT in 4-6 full-width lines with
+    alternating colours (white / black on yellow bar / white on red bar / yellow), the name in serif under it."""
+    W, H = 1280, 720
+    out = out or os.path.join(work, "thumbnail.jpg")
+    themes = [((10, 8, 6), (255, 130, 10)), ((14, 6, 6), (255, 60, 20)), ((12, 10, 4), (255, 190, 0)),
+              ((6, 10, 24), (40, 140, 255)), ((16, 6, 4), (255, 95, 0))]
+    base, glow_col = themes[sum(map(ord, seed or text or "x")) % len(themes)]
+    bg = Image.new("RGB", (W, H), base)
+    col_x = int(W * 0.47)                              # text column starts here
+    # warm light behind the avatar (no picture, just light)
+    glow = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(glow).ellipse([-W * 0.12, -H * 0.1, W * 0.58, H * 1.15], fill=200)
+    bg = Image.composite(Image.new("RGB", (W, H), glow_col), bg, glow.filter(ImageFilter.GaussianBlur(140)))
+    if avatar and os.path.isfile(avatar):
+        sp = Image.open(avatar).convert("RGBA")
+        box = sp.getchannel("A").getbbox()
+        sp = sp.crop(box) if box else sp
+        h = int(H * 1.02)
+        sp = sp.resize((max(1, round(sp.width * h / sp.height)), h), Image.LANCZOS)
+        maxw = int(W * 0.52)
+        if sp.width > maxw:                            # wide photo: keep the face, cut the sides
+            l = (sp.width - maxw) // 2
+            sp = sp.crop((l, 0, l + maxw, sp.height))
+        a = sp.getchannel("A")
+        rim = a.filter(ImageFilter.MaxFilter(13))
+        halo = a.filter(ImageFilter.MaxFilter(41)).filter(ImageFilter.GaussianBlur(26))
+        x = max(-20, int(col_x - sp.width + 30))
+        y = H - sp.height + 10
+        bg.paste(Image.new("RGB", sp.size, glow_col), (x, y), halo)
+        bg.paste(Image.new("RGB", sp.size, (255, 255, 255)), (x, y), rim)
+        bg.paste(sp, (x, y), sp)
+    d = ImageDraw.Draw(bg)
+    words = re.sub(r"[^\w\s¿?¡!.,'’-]", " ", text or "").upper().split()[:14]
+    name_h = 84 if name else 0
+    if words:
+        col_w = W - col_x - 34
+        n = max(2, min(6, -(-len(words) // 2)))        # about 2 words per line -> big letters
+        lines = _lines(words, min(n, len(words)))
+        styles = ["white", "yellowbar", "white", "redbar", "yellow", "white"]
+        # every line as big as the column allows (like the reference), then all scaled to fit the height
+        sizes = []
+        for l in lines:
+            s, t = 40, " ".join(l)
+            while s < 190 and d.textlength(t, font=_font(s + 4)) <= col_w - 24:
+                s += 4
+            sizes.append(s)
+        gap = 10
+        total = sum(sizes) * 1.04 + gap * (len(lines) - 1)
+        avail = H - 40 - name_h - 20
+        if total > avail:
+            k = avail / total
+            sizes = [max(36, int(s * k)) for s in sizes]
+            total = sum(sizes) * 1.04 + gap * (len(lines) - 1)
+        y = 24 + max(0, (avail - total) / 2)
+        for i, (l, s) in enumerate(zip(lines, sizes)):
+            f, t = _font(s), " ".join(l)
+            tw = d.textlength(t, font=f)
+            x = col_x + (col_w - tw) / 2
+            st = styles[i % len(styles)]
+            sw = max(4, s // 11)
+            bx = d.textbbox((x, y), t, font=f)
+            if st in ("yellowbar", "redbar"):
+                pad = max(8, s // 10)
+                d.rectangle([bx[0] - pad, bx[1] - pad // 2, bx[2] + pad, bx[3] + pad // 2],
+                            fill=(255, 214, 0) if st == "yellowbar" else (210, 16, 32))
+                d.text((x, y), t, font=f, fill=(0, 0, 0) if st == "yellowbar" else (255, 255, 255),
+                       stroke_width=0 if st == "yellowbar" else 2, stroke_fill=(0, 0, 0))
+            else:
+                d.text((x + 5, y + 6), t, font=f, fill=(0, 0, 0), stroke_width=sw, stroke_fill=(0, 0, 0))
+                d.text((x, y), t, font=f, fill=(255, 214, 0) if st == "yellow" else (255, 255, 255),
+                       stroke_width=sw, stroke_fill=(0, 0, 0))
+            y += s * 1.04 + gap
+    if name:                                           # "Walter" white + "Riso" yellow, serif, yellow underline
+        parts = name.split()
+        first, last = " ".join(parts[:-1]) or parts[0], parts[-1] if len(parts) > 1 else ""
+        f = _serif(64)
+        tw = d.textlength(first + (" " + last if last else ""), font=f)
+        x = col_x + (W - col_x - 34 - tw) / 2
+        y = H - name_h - 8
+        d.rectangle([x - 14, y + 70, x + tw + 14, y + 78], fill=(255, 214, 0))
+        d.text((x, y), first, font=f, fill=(255, 255, 255), stroke_width=3, stroke_fill=(0, 0, 0))
+        if last:
+            d.text((x + d.textlength(first + " ", font=f), y), last, font=f, fill=(255, 214, 0),
+                   stroke_width=3, stroke_fill=(0, 0, 0))
+    bg.save(out, "JPEG", quality=92)
+    log("thumbnail made")
+    return out
