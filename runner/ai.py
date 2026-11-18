@@ -72,7 +72,9 @@ Timed outline:
 {chr(10).join(outline)[:5000]}
 
 Return JSON with keys:
-"title": viral, curiosity, emotional, max 70 characters, similar topic to the reference but different words,
+"title": a NEW viral title about the same topic as the reference: curiosity gap or strong emotion, max 60 characters,
+   do NOT copy the reference title - use different words and a different angle (no more than 2 words in common),
+"alt_titles": 3 more different viral title options, max 60 characters each,
 "thumbnail_text": 4 to 8 powerful words for the thumbnail (no hashtags, no emojis),
 "highlight_words": the 1-2 most powerful words of thumbnail_text,
 "description": 3 short paragraphs (hook, what they will learn, call to subscribe) - no hashtags inside,
@@ -83,6 +85,10 @@ Return JSON with keys:
 "thumb_query": 2-4 ENGLISH words for a stock photo matching the thumbnail emotion."""
     j = llm_json(prompt, secrets, log) or {}
     title = (j.get("title") or ref.get("title") or transcript[:60] or "Video").strip()[:100]
+    rw = set(re.findall(r"\w+", (ref.get("title") or "").lower()))
+    if rw:                                           # still too close to the reference -> take the most different option
+        opts = [title] + [t for t in (j.get("alt_titles") or []) if isinstance(t, str) and t.strip()]
+        title = min(opts, key=lambda t: len(rw & set(re.findall(r"\w+", t.lower()))) / max(1, len(rw))).strip()
     words = re.findall(r"\w[\w'’]*", title)
     meta = {
         "title": title,
@@ -91,6 +97,7 @@ Return JSON with keys:
         "tags": [t.strip("# ").strip() for t in (j.get("tags") or ref.get("tags") or words)][:30],
         "hashtags": [h if h.startswith("#") else "#" + h for h in (j.get("hashtags") or [])][:5],
         "short_titles": (j.get("short_titles") or [])[:2],
+        "alt_titles": [t for t in (j.get("alt_titles") or []) if isinstance(t, str)][:3],
         "thumb_query": " ".join(j["thumb_query"][:1]) if isinstance(j.get("thumb_query"), list) else (j.get("thumb_query") or ""),
     }
     while sum(len(t) + 3 for t in meta["tags"]) > 480:

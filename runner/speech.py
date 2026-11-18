@@ -205,31 +205,39 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     lines = []
     t1 = t1 if t1 is not None else 1e9
+    words = []                                       # all words of the window, across segments
     for s in segments:
-        words = [w for w in s["words"] if w["e"] > t0 and w["s"] < t1]
-        if not words and s["text"] and s["end"] > t0 and s["start"] < t1:     # no word times -> whole sentence
-            words = [{"w": x, "s": s["start"] + i * (s["end"] - s["start"]) / max(1, len(s["text"].split())),
-                      "e": s["start"] + (i + 1) * (s["end"] - s["start"]) / max(1, len(s["text"].split()))}
-                     for i, x in enumerate(s["text"].split())]
-        groups, sent = [], []                         # split per sentence, then into balanced lines of <= N words
-        for j, w in enumerate(words):
-            sent.append(w)
-            if w["w"].endswith(END) or j == len(words) - 1:
-                n = -(-len(sent) // max_words)
-                size = -(-len(sent) // n)
-                groups += [sent[x:x + size] for x in range(0, len(sent), size)]
-                sent = []
-        for grp in groups:
-            for k, w in enumerate(grp):
-                a = w["s"] if k else grp[0]["s"]
-                b = grp[k + 1]["s"] if k + 1 < len(grp) else grp[-1]["e"] + 0.15
-                a, b = max(a, t0) - t0, min(b, t1) - t0
-                if b <= a:
-                    continue
-                txt = " ".join(("{\\c&H00E5FF&\\fscx108\\fscy108}" + _clean(x["w"]).upper() + "{\\r}") if j == k
-                               else _clean(x["w"]).upper() for j, x in enumerate(grp))
-                pop = "{\\fad(40,0)}" if k == 0 else ""
-                lines.append(f"Dialogue: 0,{_t(a)},{_t(b)},S,,0,0,0,,{pop}{txt}")
+        if s["end"] <= t0 or s["start"] >= t1:
+            continue
+        ws = [w for w in s["words"] if w["e"] > t0 and w["s"] < t1]
+        if not ws and s["text"]:                     # no word times -> spread the sentence evenly
+            toks = s["text"].split()
+            step = (s["end"] - s["start"]) / max(1, len(toks))
+            ws = [{"w": x, "s": s["start"] + i * step, "e": s["start"] + (i + 1) * step} for i, x in enumerate(toks)]
+        words += ws
+    groups, sent = [], []                            # per sentence, then balanced lines of <= N words
+    for j, w in enumerate(words):
+        sent.append(w)
+        if w["w"].endswith(END) or j == len(words) - 1:
+            n = -(-len(sent) // max_words)
+            per = -(-len(sent) // n)
+            groups += [sent[x:x + per] for x in range(0, len(sent), per)]
+            sent = []
+    # fixed position (no stacking / no jumping), never two lines on screen at once
+    cx = (left_margin + 40 + W - 40) // 2
+    pos = "{\\an2\\pos(%d,%d)}" % (cx, H - mv)
+    for g, grp in enumerate(groups):
+        nxt = groups[g + 1][0]["s"] if g + 1 < len(groups) else 1e9
+        g_end = min(grp[-1]["e"] + 0.25, nxt)
+        for k, w in enumerate(grp):
+            a = grp[0]["s"] if k == 0 else w["s"]
+            b = grp[k + 1]["s"] if k + 1 < len(grp) else g_end
+            a, b = max(a, t0) - t0, min(b, t1) - t0
+            if b - a < 0.02:
+                continue
+            txt = " ".join(("{\\c&H00E5FF&}" + _clean(x["w"]).upper() + "{\\c&HFFFFFF&}") if j == k
+                           else _clean(x["w"]).upper() for j, x in enumerate(grp))
+            lines.append(f"Dialogue: 0,{_t(a)},{_t(b)},S,,0,0,0,,{pos}{txt}")
     with open(out, "w", encoding="utf-8") as f:
         f.write(head + "\n".join(lines) + "\n")
     return out

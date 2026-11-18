@@ -256,6 +256,8 @@ def produce(it, c, state):
             raise RuntimeError("the audio file is empty or broken")
         ref_th = ref_thumb(it["video_id"], work) if it.get("video_id") else None
         avatar = repo_file(it.get("speaker")) or repo_file(c.get("avatar"))
+        if avatar and (it.get("style") or c.get("style") or "viral") != "documentary":
+            avatar = render.cutout(avatar, work, log)                 # transparent avatar, no background box
 
         log("== 1. speech to text")
         segments, lang = speech.transcribe(audio, total, log, SECRETS.get("GROQ_API_KEY"))
@@ -265,6 +267,9 @@ def produce(it, c, state):
         meta = ai.metadata(ref, transcript, segments, total, lang, SECRETS, log)
         if it.get("title"):
             meta["title"] = it["title"]
+        suffix = (c.get("title_suffix") or c.get("speaker") or "").strip()
+        if suffix and suffix.lower() not in meta["title"].lower():      # "... | Walter Riso"
+            meta["title"] = f"{meta['title'][:100 - len(suffix) - 3].rstrip(' |-')} | {suffix}"
         log(f"  title: {meta['title']}")
         log(f"  thumbnail text: {meta['thumbnail_text']}")
 
@@ -319,7 +324,8 @@ def produce(it, c, state):
                 photo = tmp["image_file"] if broll._fetch_image(tmp, os.path.join(work, "x")) else None
             if not photo and px:
                 photo = px.photo(topic_q)
-            thumb = render.thumbnail(work, meta["thumbnail_text"], photo, ref_th, avatar, meta.get("highlight"), log=log)
+            thumb = render.thumbnail(work, meta["thumbnail_text"], photo, ref_th, avatar, meta.get("highlight"), log=log,
+                                     name=(c.get("speaker") or "").strip() or None)
 
         shorts = []
         if it.get("shorts"):
@@ -349,7 +355,8 @@ def produce(it, c, state):
                 if kind in done:
                     continue
                 when = slot + dt.timedelta(hours=gap * (n + 1) / 3) if slot else None
-                st = (meta["short_titles"][n] if n < len(meta["short_titles"]) else meta["title"])[:88] + " #shorts"
+                st = (meta["short_titles"][n] if n < len(meta["short_titles"]) else meta["title"]).split(" | ")[0]
+                st = (f"{st[:100 - len(suffix) - 12]} | {suffix}" if suffix else st[:88]) + " #shorts"
                 sid = upload(yt, sv, st, desc, meta["tags"], when, None, log, lang)
                 yt_ids.append({"kind": kind, "id": sid, "publish": iso(when)})
                 res["youtube"] = yt_ids
@@ -409,7 +416,8 @@ def main():
         it = {"id": "test", "channel_id": "test", "audio": "inbox/test-audio.mp3", "aspect": "16:9", "shorts": False,
               "upload": False, "background": "pexels", "title": "", "style": os.environ.get("TEST_STYLE") or "viral",
               "subject": os.environ.get("TEST_SUBJECT") or ""}
-        ok = produce(it, {"id": "test", "name": "test"}, state)
+        tc = dict(channels.get(a.channel) or {"name": "test"}, id="test")   # test with a real channel's avatar/name
+        ok = produce(it, tc, state)
         log = state["items"]["test"].get("log", [])
         summary("Test video and clip_matches.txt are in this run's Artifacts.\n\n```\n" + "\n".join(log[-25:]) + "\n```")
         sys.exit(0 if ok else 1)

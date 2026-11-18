@@ -1,6 +1,7 @@
 """Stock clips from Pexels for every scene, cut to the speech, joined into one timeline (any length: 1 h, 3 h ...)."""
 import json
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -187,6 +188,45 @@ FPS = 30
 _PHOTO_LOCK = __import__("threading").BoundedSemaphore(2)
 
 
+_UA = "FleetStudio/1.0 (open-source documentary video tool)"
+_FILE_LOCKS = {}
+
+
+def _download(urls, p, max_mb=400):
+    """Polite download (Wikimedia: <= 2 at a time, honours 429 Retry-After). Tries the urls in order."""
+    import threading
+    lock = _FILE_LOCKS.setdefault(p, threading.Lock())
+    with lock, _PHOTO_LOCK:
+        for url in urls:
+            for n in range(5):
+                if os.path.isfile(p):
+                    return p
+                try:
+                    ua = os.environ.get("MEDIA_USER_AGENT") or _UA
+                    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=90) as r,                             open(p + ".part", "wb") as f:
+                        got = 0
+                        while True:
+                            b = r.read(1 << 20)
+                            if not b:
+                                break
+                            got += len(b)
+                            if got > max_mb * 1e6:
+                                raise ValueError("file too big")
+                            f.write(b)
+                    os.replace(p + ".part", p)
+                    return p
+                except urllib.error.HTTPError as e:
+                    if e.code == 404:
+                        break                                  # try the next url
+                    wait = int(e.headers.get("Retry-After") or 0) if e.headers else 0
+                    time.sleep(min(30, max(wait, 3 * (n + 1))))
+                except ValueError:
+                    break
+                except Exception:                              # noqa: BLE001
+                    time.sleep(2 + n * 3)
+    return p if os.path.isfile(p) else None
+
+
 def _fetch_image(s, folder):
     """Downloads a documentary photo once (shared by every scene that uses it)."""
     import hashlib
@@ -196,24 +236,23 @@ def _fetch_image(s, folder):
         return os.path.isfile(url)
     p = os.path.join(os.path.dirname(folder), "photos", hashlib.md5(url.encode()).hexdigest()[:16] + ".img")
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    with _PHOTO_LOCK:                                 # Wikimedia allows only a few downloads at once
-        for n in range(5):
-            if os.path.isfile(p):
-                break
-            try:
-                ua = os.environ.get("MEDIA_USER_AGENT") or "FleetStudio/1.0 (open-source documentary video tool)"
-                with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=60) as r:
-                    data = r.read()
-                with open(p + ".part", "wb") as f:
-                    f.write(data)
-                os.replace(p + ".part", p)
-            except urllib.error.HTTPError as e:
-                wait = int(e.headers.get("Retry-After") or 0) if e.headers else 0
-                time.sleep(min(30, max(wait, 3 * (n + 1))))
-            except Exception:                         # noqa: BLE001
-                time.sleep(2 + n * 3)
     s["image_file"] = p
-    return os.path.isfile(p)
+    return bool(_download([url], p, 40))
+
+
+def _wiki_film(url, folder):
+    """Wikimedia film: download the small 720p/480p transcode (never stream: Wikimedia blocks that)."""
+    import hashlib
+    m = re.match(r"(https://upload\.wikimedia\.org/wikipedia/commons)/(\w/\w\w)/([^/?]+)", url)
+    urls = []
+    if m:
+        base, path, name = m.groups()
+        for q in ("720p.vp9.webm", "480p.vp9.webm", "720p.webm", "480p.webm"):
+            urls.append(f"{base}/transcoded/{path}/{name}/{name}.{q}")
+    urls.append(url)
+    p = os.path.join(os.path.dirname(folder), "films", hashlib.md5(url.encode()).hexdigest()[:16] + ".webm")
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    return _download(urls, p, 300)
 
 
 def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
@@ -222,6 +261,10 @@ def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
     d = frames / FPS
     vf = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={FPS},format=yuv420p"
     src = s.get("clip")
+    if src and "wikimedia.org" in src:
+        src = _wiki_film(src, os.path.dirname(out)) or None
+        if not src and s.get("image") is None:
+            log("  a Wikimedia film could not be downloaded - using the still picture")
     if src:
         net = ["-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"] if src.startswith("http") else []
         loop = ["-stream_loop", "-1"] if s.get("clip_dur", 0) < d + s.get("offset", 0) + 0.5 else []
