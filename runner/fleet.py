@@ -23,10 +23,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+import ai  # noqa: E402
+import broll  # noqa: E402
 import render  # noqa: E402
+import speech  # noqa: E402
 
 FLEET = os.path.join(ROOT, "fleet")
 OUT = os.path.join(ROOT, "out")
+LOCALES = {"es": "es-ES", "pt": "pt-BR", "fr": "fr-FR", "de": "de-DE", "it": "it-IT", "hi": "hi-IN", "id": "id-ID",
+           "ru": "ru-RU", "tr": "tr-TR", "pl": "pl-PL", "nl": "nl-NL", "ja": "ja-JP", "ko": "ko-KR", "zh": "zh-CN"}
 GAPS = {"auto48": 48, "auto72": 72, "auto96": 96}
 AHEAD = int(os.environ.get("FLEET_AHEAD", "3"))          # scheduled videos kept waiting per channel
 PER_RUN = int(os.environ.get("FLEET_PER_RUN", "2"))      # videos per autopilot run (YouTube quota ~6 uploads/day)
@@ -223,47 +228,97 @@ def produce(it, c, state):
     res.update(status="running", run=os.environ.get("GITHUB_RUN_ID"), started=iso(now()), error=None)
     try:
         yt = youtube(c["id"]) if (it.get("upload") or it.get("video_id")) else None
-        meta = {"title": it.get("title") or "", "description": "", "tags": []}
+        aspect = it.get("aspect", "16:9")
+        ref = {"title": it.get("title") or "", "description": "", "tags": []}
         if it.get("video_id") and yt:
-            meta = video_meta(yt, it["video_id"])
-            meta["title"] = it.get("title") or meta["title"]
-        log(f"== {meta['title'] or it['id']}")
+            ref = video_meta(yt, it["video_id"])
+        log(f"== reference: {ref['title'] or it['id']}")
         audio = repo_file(it.get("audio"))
         if not audio:
             log("== getting audio from the reference video")
             audio = ytdlp(it["ref_url"], work, "audio", log)
-        thumb_src = ref_thumb(it["video_id"], work) if it.get("video_id") else None
-        bg_video = None
-        if it.get("background", "video") == "video" and it.get("ref_url"):
+        total = render.duration(audio)
+        if total < 1:
+            raise RuntimeError("the audio file is empty or broken")
+        ref_th = ref_thumb(it["video_id"], work) if it.get("video_id") else None
+        avatar = repo_file(it.get("speaker")) or repo_file(c.get("avatar"))
+
+        log("== 1. speech to text")
+        segments, lang = speech.transcribe(audio, total, log)
+        transcript = " ".join(s["text"] for s in segments)
+
+        log("== 2. new title, description, tags, hashtags (AI)")
+        meta = ai.metadata(ref, transcript, segments, total, lang, SECRETS, log)
+        if it.get("title"):
+            meta["title"] = it["title"]
+        log(f"  title: {meta['title']}")
+        log(f"  thumbnail text: {meta['thumbnail_text']}")
+
+        mode = it.get("background") or "pexels"
+        px = broll.Pexels(SECRETS["PEXELS_API_KEY"], os.path.join(work, "clips"), log) if SECRETS.get("PEXELS_API_KEY") else None
+        if mode == "pexels" and not px:
+            log("  no PEXELS_API_KEY secret -> background = reference thumbnail with motion (add the free key in Settings)")
+        topic_q = meta.get("thumb_query") or "cinematic nature"
+        scenes = speech.scenes_from(segments, total)
+        still = repo_file(it.get("thumb")) or ref_th or render._blank(work, 1920, 1080)
+        if mode == "video" and it.get("ref_url"):
             try:
-                bg_video = ytdlp(it["ref_url"], work, "video", log)
+                bgv = ytdlp(it["ref_url"], work, "video", log)
+                for sc in scenes:
+                    sc.update(clip=bgv, clip_dur=total * 10, offset=sc["start"])
             except Exception as e:                   # noqa: BLE001
-                log(f"background video blocked ({str(e)[:150]}) - using the thumbnail with motion")
-        speaker = repo_file(it.get("speaker")) or repo_file(c.get("avatar"))
-        log("== rendering 1080p")
-        main = render.main_video(work, audio, os.path.join(work, "video.mp4"), it.get("aspect", "16:9"),
-                                 bg_video, None if bg_video else (repo_file(it.get("thumb")) or thumb_src), speaker, log)
+                log(f"  reference video blocked ({str(e)[:120]}) - using Pexels/thumbnail")
+                mode = "pexels"
+        if mode == "pexels" and px:
+            log(f"== 3. stock clips for {len(scenes)} scenes (Pexels)")
+            queries, english = ai.scene_queries(scenes, meta["title"], SECRETS, log)
+            if not english:
+                px.locale = LOCALES.get(lang)
+            broll.plan(scenes, queries, topic_q, px, aspect, log)
+
+        log(f"== 4. video {aspect} with subtitles + avatar ({total / 60:.1f} min)")
+        main = broll.compose(work, scenes, segments, audio, os.path.join(work, "video.mp4"), aspect, still, avatar, log=log)
+
+        log("== 5. thumbnail")
         thumb = repo_file(it.get("thumb"))
         if thumb:
             thumb = shutil.copy(thumb, os.path.join(work, "thumbnail" + os.path.splitext(thumb)[1]))
         else:
-            thumb = render.thumbnail(work, meta["title"], thumb_src, speaker, log=log)
-        shorts = render.shorts(work, main, audio, 2, log=log) if it.get("shorts") else []
-        yt_ids = []
+            photo = px.photo(topic_q) if px else None
+            thumb = render.thumbnail(work, meta["thumbnail_text"], photo, ref_th, avatar, meta.get("highlight"), log=log)
+
+        shorts = []
+        if it.get("shorts"):
+            log("== 6. vertical Shorts")
+            for n, (a, b) in enumerate(broll.pick_short_windows(segments, total)):
+                shorts.append(broll.compose(work, scenes, segments, audio, os.path.join(work, f"short_{n + 1}.mp4"),
+                                            "9:16", still, avatar, a, b, log, tag=f"short{n + 1}"))
+        shutil.rmtree(os.path.join(work, "clips"), ignore_errors=True)
+
+        yt_ids = list(res.get("youtube") or [])            # a retry after the daily limit skips what is already up
+        done = {y["kind"] for y in yt_ids}
         if it.get("upload"):
-            log("== uploading to YouTube")
-            desc = ((c.get("credit") or "") + "\n\n" + meta.get("description", "")).strip()
+            log("== 7. uploading to YouTube")
+            desc = ((c.get("credit") or "") + "\n\n" + meta["description"]).strip()
             gap = GAPS.get(it.get("schedule"))
-            slot = next_slot(cs, gap) if gap else None
-            vid = upload(yt, main, meta["title"] or "Video", desc, meta.get("tags", []), slot, thumb, log, meta.get("lang"))
-            yt_ids.append({"kind": "video", "id": vid, "publish": iso(slot)})
-            for n, s in enumerate(shorts):
+            prev = next((y for y in yt_ids if y["kind"] == "video"), None)
+            slot = parse(prev["publish"]) if prev and prev.get("publish") else (next_slot(cs, gap) if gap else None)
+            if "video" not in done:
+                vid = upload(yt, main, meta["title"], desc, meta["tags"], slot, thumb, log, lang)
+                yt_ids.append({"kind": "video", "id": vid, "publish": iso(slot)})
+                res["youtube"] = yt_ids
+                if slot:
+                    cs["last_slot"] = iso(slot)
+                    cs["slots"] = [s for s in cs.get("slots", []) if parse(s) > now() - dt.timedelta(days=30)] + [iso(slot)]
+            for n, sv in enumerate(shorts):
+                kind = f"short {n + 1}"
+                if kind in done:
+                    continue
                 when = slot + dt.timedelta(hours=gap * (n + 1) / 3) if slot else None
-                sid = upload(yt, s, (meta["title"][:88] + " #Shorts").strip(), desc, meta.get("tags", []), when, None, log, meta.get("lang"))
-                yt_ids.append({"kind": f"short {n + 1}", "id": sid, "publish": iso(when)})
-            if slot:
-                cs["last_slot"] = iso(slot)
-                cs["slots"] = [s for s in cs.get("slots", []) if parse(s) > now() - dt.timedelta(days=30)] + [iso(slot)]
+                st = (meta["short_titles"][n] if n < len(meta["short_titles"]) else meta["title"])[:88] + " #shorts"
+                sid = upload(yt, sv, st, desc, meta["tags"], when, None, log, lang)
+                yt_ids.append({"kind": kind, "id": sid, "publish": iso(when)})
+                res["youtube"] = yt_ids
         res.update(status="done", finished=iso(now()), youtube=yt_ids, title=meta["title"])
         summary(f"### ✅ {meta['title']}\n" + "".join(f"- {y['kind']}: https://youtu.be/{y['id']} "
                                                        f"{'(public ' + y['publish'] + ')' if y['publish'] else '(public now)'}\n" for y in yt_ids))
@@ -310,7 +365,7 @@ def main():
             queue.append({"id": "i" + v["id"].replace("-", "x").replace("_", "y").lower()[:11] + c["id"][:4],
                           "channel_id": c["id"], "ref_url": v["url"], "video_id": v["id"], "title": v["title"],
                           "aspect": c.get("aspect", "16:9"), "shorts": c.get("shorts", True), "upload": True,
-                          "schedule": c.get("schedule", "auto72"), "background": "video", "created": iso(now())})
+                          "schedule": c.get("schedule", "auto72"), "background": "pexels", "created": iso(now())})
             added += 1
         wj("queue.json", queue)
         state["channels"].setdefault(c["id"], {})["import_msg"] = f"{iso(now())[:16]} imported {added} new of {len(vids)} videos"

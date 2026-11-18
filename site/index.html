@@ -66,7 +66,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
 <main>
 <section id="t-produce">
   <div class="card">
-    <h2>New video</h2><div class="mute">You give a reference video and an audio file. The cloud makes a 1080p video, a high-CTR thumbnail and 2 Shorts, then uploads them on your schedule.</div>
+    <h2>New video</h2><div class="mute">The cloud listens to the audio, picks a matching Pexels clip for every sentence, adds big subtitles and your avatar bottom-left, writes a new title, description, tags and hashtags, makes a thumbnail in the style of the reference and 2 Shorts, then uploads everything on your schedule. Any length works, 1 hour or more.</div>
     <div class="row">
       <div><label>Channel</label><select id="pChan"></select></div>
       <div><label>Reference YouTube URL</label><input id="pUrl" placeholder="https://www.youtube.com/watch?v=..."></div>
@@ -78,11 +78,11 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
     </div>
     <div class="row">
       <div><label>Thumbnail (optional - otherwise generated automatically)</label><input type="file" id="pThumb" accept="image/*"></div>
-      <div><label>Speaker cutout - transparent PNG, bottom-left (optional - default: channel avatar)</label><input type="file" id="pSpeaker" accept=".png,.webp"></div>
+      <div><label>Uploader avatar - transparent PNG, bottom-left (optional - default: channel avatar)</label><input type="file" id="pSpeaker" accept=".png,.webp"></div>
     </div>
     <div class="row">
       <div><label>Format</label><select id="pAspect"><option value="16:9">16:9 full video</option><option value="9:16">9:16 vertical Shorts</option></select></div>
-      <div><label>Background</label><select id="pBg"><option value="video">Reference video (muted)</option><option value="image">Thumbnail with slow motion</option></select></div>
+      <div><label>Background</label><select id="pBg"><option value="pexels">Pexels clips matched to every sentence (recommended)</option><option value="video">Reference video (muted)</option><option value="image">Thumbnail with slow motion</option></select></div>
       <div><label>Publishing schedule</label><select id="pSched">
         <option value="auto48">Auto 2-day gap (48h)</option><option value="auto72" selected>Auto 3-day gap (72h) - recommended</option>
         <option value="auto96">Auto 4-day gap (96h)</option><option value="now">Publish immediately (public)</option></select></div>
@@ -155,6 +155,13 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
     <div class="mute">Google Cloud, then Credentials, then OAuth client ID of type "Web application". Authorized redirect URI: <code id="sRedirect"></code></div>
     <div class="row"><div><label>Client ID</label><input id="sGid"></div><div><label>Client secret</label><input id="sGsec" type="password"></div></div>
     <div class="btns"><button class="btn" id="sGsave">Save (encrypted in this browser)</button></div><div id="sGmsg"></div>
+  </div>
+  <div class="card">
+    <h3>Free API keys (saved as encrypted GitHub secrets)</h3>
+    <div class="mute"><b>Pexels</b> (needed for stock clips): free key at <a href="https://www.pexels.com/api/" target="_blank">pexels.com/api</a>.
+      <b>Gemini</b> (optional, better titles and clip matching than the free fallback): free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>.</div>
+    <div class="row"><div><label>Pexels API key</label><input id="sPx" type="password"></div><div><label>Gemini API key (optional)</label><input id="sGem" type="password"></div></div>
+    <div class="btns"><button class="btn" id="sKeysBtn">Save keys</button><span id="sKeysMsg" class="mute"></span></div>
   </div>
   <div class="card">
     <h3>Local Audio Bridge</h3>
@@ -357,6 +364,9 @@ async function googleReturn(){const p=new URLSearchParams(location.search);if(!p
 /* settings */
 $("#sGsave").onclick=async()=>{S.gid=$("#sGid").value.trim();S.gsec=$("#sGsec").value.trim();await saveProfile();msg("#sGmsg","Saved.")};
 $("#sBridge").onclick=async()=>{try{const r=await fetch(BRIDGE+"/ping");$("#sBridgeMsg").textContent=r.ok?"✓ Bridge is running":"Bridge error"}catch(e){$("#sBridgeMsg").textContent="Not running - start tools/Start-Audio-Bridge.bat"}};
+$("#sKeysBtn").onclick=e=>busy(e.target,async()=>{try{const out=[];if($("#sPx").value.trim()){await setSecret("PEXELS_API_KEY",$("#sPx").value.trim());out.push("Pexels")}
+  if($("#sGem").value.trim()){await setSecret("GEMINI_API_KEY",$("#sGem").value.trim());out.push("Gemini")}
+  $("#sPx").value=$("#sGem").value="";$("#sKeysMsg").textContent=out.length?"✓ Saved: "+out.join(", "):"Type a key first."}catch(err){$("#sKeysMsg").textContent=err.message}});
 $("#sCkBtn").onclick=e=>busy(e.target,async()=>{const f=$("#sCk").files[0];if(!f)return;try{await setSecret("YT_COOKIES",await f.text());$("#sCkMsg").textContent="✓ Saved as secret YT_COOKIES"}catch(err){$("#sCkMsg").textContent=err.message}});
 $("#sTokBtn").onclick=async()=>{const t=$("#sTok").value.trim();if(!t)return;const old=S.token;S.token=t;try{await gh(R());await saveProfile();$("#sTok").value="";msg("#sTokMsg","Token saved.")}catch(e){S.token=old;msg("#sTokMsg","Token not accepted: "+e.message,1)}};
 $("#sDelProfile").onclick=()=>{if(!confirm("Remove this profile from this browser? (The repository is not touched.)"))return;const p=store.get();delete p[S.user];store.set(p);$("#logout").click()};

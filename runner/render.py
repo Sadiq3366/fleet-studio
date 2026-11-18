@@ -127,65 +127,108 @@ def _font(size):
     return ImageFont.load_default()
 
 
-def _hook(title, max_chars=26):
-    """Short, punchy text for the thumbnail from the video title (whole words, no dangling 'the/of/te...')."""
-    t = re.sub(r"[\(\[].*?[\)\]]|#\S+|\|.*$", "", title).strip(" -:|")
-    out = []
-    for w in t.split():
-        if len(" ".join(out + [w])) > max_chars:
-            break
-        out.append(w)
-    while len(out) > 2 and len(out[-1].strip(",.;:!?¿¡")) <= 3:
-        out.pop()
-    return " ".join(out).upper()
+def _lines(words, n):
+    """Splits words into n balanced lines."""
+    best, total = None, sum(len(w) for w in words)
+    import itertools
+    for cuts in itertools.combinations(range(1, len(words)), n - 1):
+        parts = [words[a:b] for a, b in zip((0,) + cuts, cuts + (len(words),))]
+        score = max(len(" ".join(p)) for p in parts)
+        if best is None or score < best[0]:
+            best = (score, parts)
+    return best[1] if best else [words]
 
 
-def thumbnail(work, title, base_image=None, speaker=None, out=None, log=print):
-    """1280x720 high-contrast thumbnail: background image, big 2-line text with stroke, speaker cutout on the right."""
+def _palette(img):
+    small = img.convert("RGB").resize((64, 36))
+    q = small.quantize(5)
+    pal = q.getpalette()[:15]
+    counts = sorted(q.getcolors(), reverse=True)
+    cols = [tuple(pal[i * 3:i * 3 + 3]) for _, i in counts]
+    # most colourful of the main colours
+    return max(cols, key=lambda c: max(c) - min(c))
+
+
+def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=(), out=None, log=print):
+    """1280x720 viral thumbnail in the style/colours of the reference: photo, avatar with white outline, 4-8 big words."""
+    from PIL import ImageEnhance, ImageOps
     W, H = 1280, 720
     out = out or os.path.join(work, "thumbnail.jpg")
-    if base_image and os.path.isfile(base_image):
-        bg = Image.open(base_image).convert("RGB")
-        s = max(W / bg.width, H / bg.height)
-        bg = bg.resize((round(bg.width * s), round(bg.height * s)), Image.LANCZOS)
-        bg = bg.crop(((bg.width - W) // 2, (bg.height - H) // 2, (bg.width - W) // 2 + W, (bg.height - H) // 2 + H))
+
+    def cover(path):
+        im = Image.open(path).convert("RGB")
+        s = max(W / im.width, H / im.height)
+        im = im.resize((round(im.width * s), round(im.height * s)), Image.LANCZOS)
+        return im.crop(((im.width - W) // 2, (im.height - H) // 2, (im.width - W) // 2 + W, (im.height - H) // 2 + H))
+
+    ref = cover(ref_thumb) if ref_thumb and os.path.isfile(ref_thumb) else None
+    if bg_photo and os.path.isfile(bg_photo):
+        bg = cover(bg_photo)
+        if ref is not None:                               # take over the reference colour mood
+            bg = Image.blend(bg, Image.new("RGB", (W, H), _palette(ref)), 0.22)
+    elif ref is not None:
+        bg = ImageOps.mirror(ref).filter(ImageFilter.GaussianBlur(3))
     else:
-        bg = Image.new("RGB", (W, H), (20, 20, 30))
-    bg = bg.filter(ImageFilter.GaussianBlur(2))
-    shade = Image.new("L", (W, H))
-    ImageDraw.Draw(shade).rectangle([0, 0, W, H], fill=0)
-    for x in range(W):                                   # dark on the text side (left) -> readable text
-        ImageDraw.Draw(shade).line([(x, 0), (x, H)], fill=int(170 * max(0, 1 - x / (W * 0.75))))
-    bg = Image.composite(Image.new("RGB", (W, H)), bg, shade)
-    if speaker and os.path.isfile(speaker):
-        sp = Image.open(speaker).convert("RGBA")
+        bg = Image.new("RGB", (W, H), (25, 25, 40))
+    bg = ImageEnhance.Color(bg).enhance(1.35)
+    bg = ImageEnhance.Contrast(bg).enhance(1.18)
+    # vignette + dark text side
+    mask = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(mask)
+    for x in range(0, W, 4):
+        d.rectangle([x, 0, x + 4, H], fill=int(175 * max(0.0, 1 - x / (W * 0.7))))
+    bg = Image.composite(Image.new("RGB", (W, H)), bg, mask)
+    vig = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(vig).ellipse([-W * 0.2, -H * 0.3, W * 1.2, H * 1.3], fill=255)
+    bg = Image.composite(bg, Image.new("RGB", (W, H)), vig.filter(ImageFilter.GaussianBlur(120)))
+
+    text_w = W * 0.92
+    if avatar and os.path.isfile(avatar):
+        sp = Image.open(avatar).convert("RGBA")
         box = sp.getchannel("A").getbbox()
         sp = sp.crop(box) if box else sp
-        h = int(H * 0.95)
+        h = int(H * 0.98)
         sp = sp.resize((max(1, round(sp.width * h / sp.height)), h), Image.LANCZOS)
-        glow = sp.getchannel("A").filter(ImageFilter.GaussianBlur(14))
-        x = W - sp.width + int(sp.width * 0.08)
-        bg.paste(Image.new("RGB", sp.size, (255, 255, 255)), (x, H - h), glow)
-        bg.paste(sp, (x, H - h), sp)
-    text = _hook(title)
-    if text:
+        if sp.width > W * 0.5:
+            sp = sp.resize((int(W * 0.5), round(sp.height * W * 0.5 / sp.width)), Image.LANCZOS)
+        a = sp.getchannel("A")
+        outline = a.filter(ImageFilter.MaxFilter(17))
+        glow = a.filter(ImageFilter.MaxFilter(31)).filter(ImageFilter.GaussianBlur(18))
+        x, y = W - sp.width + int(sp.width * 0.04), H - sp.height
+        bg.paste(Image.new("RGB", sp.size, _palette(ref) if ref is not None else (255, 200, 0)), (x, y), glow)
+        bg.paste(Image.new("RGB", sp.size, (255, 255, 255)), (x, y), outline)
+        bg.paste(sp, (x, y), sp)
+        text_w = min(text_w, x - 60)
+
+    words = re.sub(r"[#\"“”]", "", text or "").upper().split()[:8]
+    if words:
         d = ImageDraw.Draw(bg)
-        words, lines = text.split(), []
-        half = (len(words) + 1) // 2 if len(words) > 2 else len(words)
-        lines = [" ".join(words[:half]), " ".join(words[half:])] if len(words) > 2 else [text]
-        lines = [l for l in lines if l]
-        size = 150
-        while size > 50:
+        hl = {w.strip(",.!?¡¿:") for w in (highlight or [])} or {max(words, key=len).strip(",.!?¡¿:")}
+        n = 1 if len(words) <= 2 else 2 if len(words) <= 5 else 3
+        lines = _lines(words, n)
+        size = 190
+        while size > 48:
             f = _font(size)
-            if max(d.textlength(l, font=f) for l in lines) <= W * 0.58:
+            if max(d.textlength(" ".join(l), font=f) for l in lines) <= text_w and len(lines) * size * 1.05 <= H * 0.86:
                 break
-            size -= 6
+            size -= 4
         f = _font(size)
-        y = (H - len(lines) * size * 1.1) / 2
-        for n, l in enumerate(lines):
-            d.text((48, y), l, font=f, fill=(255, 221, 0) if n == 0 else (255, 255, 255),
-                   stroke_width=max(4, size // 14), stroke_fill=(0, 0, 0))
-            y += size * 1.1
-    bg.save(out, "JPEG", quality=90)
+        y = (H - len(lines) * size * 1.05) / 2
+        sw = max(5, size // 11)
+        for l in lines:
+            x = 46
+            for w in l:
+                tw = d.textlength(w, font=f)
+                if w.strip(",.!?¡¿:") in hl:              # key word: yellow on a red box
+                    bx = d.textbbox((x, y), w, font=f, stroke_width=sw)
+                    d.rounded_rectangle([bx[0] - 8, bx[1] - 8, bx[2] + 8, bx[3] + 8], radius=14, fill=(220, 20, 40))
+                    d.text((x, y), w, font=f, fill=(255, 230, 0), stroke_width=sw, stroke_fill=(0, 0, 0))
+                else:
+                    d.text((x, y), w, font=f, fill=(255, 255, 255), stroke_width=sw, stroke_fill=(0, 0, 0))
+                x += tw + d.textlength(" ", font=f)
+            y += size * 1.05
+    bg.save(out, "JPEG", quality=92)
+    if os.path.getsize(out) > 1_900_000:
+        bg.save(out, "JPEG", quality=80)
     log("thumbnail made")
     return out

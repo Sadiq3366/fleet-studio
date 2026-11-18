@@ -43,6 +43,12 @@ STEP 4 - Google key for YouTube (one time)
      e.g.  https://fleet-studio-xxxx.vercel.app/
   4. Website -> Settings -> paste Client ID + Client secret -> Save.
 
+STEP 4b - Free keys for clips and AI
+  Pexels (stock clips, required for clip backgrounds): https://www.pexels.com/api/ -> free key
+  Gemini (optional, better titles/tags/clip matching): https://aistudio.google.com/apikey
+  Website -> Settings -> Free API keys -> Save keys.
+  Without Gemini the free Pollinations AI is used (slower, sometimes busy).
+
 STEP 5 - Channels
   Website -> Channels -> add channel (name, speaker, avatar PNG, reference @handle,
   schedule) -> "Connect YouTube" -> choose the channel -> Allow.
@@ -61,7 +67,20 @@ AUDIO AND BOT BLOCKS
   The background "reference video" also needs (c); without it the cloud uses
   the thumbnail with slow motion automatically.
 
+WHAT THE CLOUD DOES FOR EACH VIDEO
+  1. speech to text (Whisper) -> sentences with exact word times
+  2. AI writes a new title, description with chapters, 20 tags, hashtags, Shorts titles,
+     4-8 thumbnail words
+  3. one Pexels clip per sentence/scene (English search words; the video's language as fallback)
+  4. joins the clips with the audio, big word-by-word subtitles at the bottom, avatar bottom-left
+  5. thumbnail: stock photo in the colours of the reference thumbnail + avatar + big words
+  6. 2 vertical Shorts from the best moments (they start and end on full sentences)
+  7. upload + schedule
+  Long videos: 1 hour takes about 1-2 hours of cloud time (GitHub limit is 6 hours per run).
+
 GOOGLE LIMITS (free)
+  * Videos longer than 15 minutes: the YouTube channel must be phone-verified
+    (youtube.com/verify). Otherwise YouTube refuses the upload.
   * About 6 uploads per day per Google project. 1 video + 2 Shorts = 3 uploads.
     When the limit is hit, the item waits 24h and autopilot retries.
   * Until Google audits your API project, YouTube can lock API uploads as PRIVATE.
