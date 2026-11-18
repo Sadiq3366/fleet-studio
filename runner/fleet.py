@@ -35,7 +35,7 @@ LOCALES = {"es": "es-ES", "pt": "pt-BR", "fr": "fr-FR", "de": "de-DE", "it": "it
 GAPS = {"auto48": 48, "auto72": 72, "auto96": 96}
 AHEAD = int(os.environ.get("FLEET_AHEAD", "3"))          # scheduled videos kept waiting per channel
 PER_RUN = int(os.environ.get("FLEET_PER_RUN", "2"))      # videos per autopilot run (YouTube quota ~6 uploads/day)
-SECRETS = json.loads(os.environ.get("ALL_SECRETS") or "{}")
+SECRETS = {k: os.environ[k] for k in ("PEXELS_API_KEY", "GEMINI_API_KEY", "YT_COOKIES", "FLEET_VAULT_KEY") if os.environ.get(k)}
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"]
 
 
@@ -96,12 +96,25 @@ def youtube(channel_id):
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from googleapiclient.discovery import build
-    raw = SECRETS.get("YT_TOKEN_" + channel_id.upper())
-    if not raw:
-        raise RuntimeError("YouTube not connected for this channel (website -> Channels -> Connect YouTube)")
+    raw = vault_token(channel_id)
     creds = Credentials.from_authorized_user_info(json.loads(raw), SCOPES)
     creds.refresh(Request())
     return build("youtube", "v3", credentials=creds, cache_discovery=False)
+
+
+def vault_token(channel_id):
+    """YouTube login of a channel: fleet/tokens/<id>.txt, sealed by the website with the vault PUBLIC key.
+    Only the private key (secret FLEET_VAULT_KEY) can open it - same method GitHub uses for its secrets."""
+    import base64
+    from nacl.public import PrivateKey, SealedBox
+    p = os.path.join(FLEET, "tokens", f"{channel_id}.txt")
+    if not os.path.isfile(p):
+        raise RuntimeError("YouTube not connected for this channel (website -> Channels -> Connect YouTube)")
+    if not SECRETS.get("FLEET_VAULT_KEY"):
+        raise RuntimeError("secret FLEET_VAULT_KEY missing - connect YouTube again on the website")
+    box = SealedBox(PrivateKey(base64.b64decode(SECRETS["FLEET_VAULT_KEY"])))
+    with open(p, encoding="utf-8") as f:
+        return box.decrypt(base64.b64decode(f.read().strip())).decode("utf-8")
 
 
 def video_meta(yt, vid):

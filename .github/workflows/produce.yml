@@ -34,7 +34,10 @@ jobs:
           pip install -q -r runner/requirements.txt
       - name: Produce
         env:
-          ALL_SECRETS: ${{ toJSON(secrets) }}
+          FLEET_VAULT_KEY: ${{ secrets.FLEET_VAULT_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
           MODE: ${{ inputs.mode || 'autopilot' }}
           ITEM: ${{ inputs.item }}
           CHANNEL: ${{ inputs.channel }}

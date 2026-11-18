@@ -248,8 +248,16 @@ async function putFile(path,file,message){if(file.size>95*1024*1024)throw new Er
   await putRaw(path,await fileB64(file),message,sha);return path}
 async function dispatch(inputs){await gh(`${R()}/actions/workflows/${WF}/dispatches`,{method:"POST",body:JSON.stringify({ref:BRANCH,inputs})})}
 let sodiumP=null;
-async function setSecret(name,value){sodiumP=sodiumP||import("https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/+esm").then(async m=>{const s=m.default||m;await s.ready;return s});
-  const so=await sodiumP, k=await gh(`${R()}/actions/secrets/public-key`);
+function sodium(){sodiumP=sodiumP||import("https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/+esm").then(async m=>{const s=m.default||m;await s.ready;return s});return sodiumP}
+/* vault: YouTube logins are sealed with a public key (fleet/vault_pub.txt); only the cloud runner has the private key (secret FLEET_VAULT_KEY) */
+async function vaultPub(){const so=await sodium();let pub=null;try{pub=(await gh(`${R()}/contents/fleet/vault_pub.txt?ref=${BRANCH}`,{headers:{Accept:"application/vnd.github.raw"}})).trim()}catch(e){if(e.status!==404)throw e}
+  if(pub)return pub;const kp=so.crypto_box_keypair(),B=so.base64_variants.ORIGINAL;
+  await setSecret("FLEET_VAULT_KEY",so.to_base64(kp.privateKey,B));pub=so.to_base64(kp.publicKey,B);
+  await putRaw("fleet/vault_pub.txt",btoa(pub+"\n"),"create vault public key",null);return pub}
+async function vaultSeal(text){const so=await sodium(),B=so.base64_variants.ORIGINAL,pub=await vaultPub();return so.to_base64(so.crypto_box_seal(so.from_string(text),so.from_base64(pub,B)),B)}
+async function delFile(path,message){try{const j=await gh(`${R()}/contents/${path}?ref=${BRANCH}`);await gh(`${R()}/contents/${path}`,{method:"DELETE",body:JSON.stringify({message,sha:j.sha,branch:BRANCH})})}catch(e){if(e.status!==404)throw e}}
+async function setSecret(name,value){
+  const so=await sodium(), k=await gh(`${R()}/actions/secrets/public-key`);
   const enc=so.to_base64(so.crypto_box_seal(so.from_string(value),so.from_base64(k.key,so.base64_variants.ORIGINAL)),so.base64_variants.ORIGINAL);
   await gh(`${R()}/actions/secrets/${name}`,{method:"PUT",body:JSON.stringify({encrypted_value:enc,key_id:k.key_id})})}
 
@@ -365,7 +373,7 @@ window.setAuto=(id,on)=>busy(null,async()=>{await mutate("fleet/channels.json",[
 window.editC=id=>{const c=D.channels.find(x=>x.id===id);$("#cFormTitle").textContent="Edit channel";$("#cId").value=c.id;$("#cName").value=c.name;$("#cSpeaker").value=c.speaker||"";
   $("#cRef").value=c.reference||"";$("#cSched").value=c.schedule;$("#cAspect").value=c.aspect||"16:9";$("#cCredit").value=c.credit||"";$("#cShorts").checked=!!c.shorts;$("#cOwner").value=c.owner||"";$("#cName").focus()};
 window.delC=id=>busy(null,async()=>{if(!confirm("Delete this channel and its queue?"))return;await mutate("fleet/channels.json",[],cs=>cs.filter(x=>x.id!==id),`delete channel ${id}`);
-  await mutate("fleet/queue.json",[],q=>q.filter(x=>x.channel_id!==id),`clear queue of ${id}`);load()});
+  await mutate("fleet/queue.json",[],q=>q.filter(x=>x.channel_id!==id),`clear queue of ${id}`);await delFile(`fleet/tokens/${id}.txt`,`remove YouTube login ${id}`);load()});
 $("#cNew").onclick=()=>{$("#cFormTitle").textContent="Add channel";["#cId","#cName","#cSpeaker","#cRef","#cCredit","#cOwner"].forEach(s=>$(s).value="");$("#cAvatar").value=""};
 $("#cSave").onclick=e=>busy(e.target,async()=>{try{const id=$("#cId").value||rid();let avatar=null;
   if($("#cAvatar").files[0])avatar=await putFile(`assets/${id}.png`,$("#cAvatar").files[0],`avatar for ${id}`);
@@ -389,9 +397,11 @@ async function googleReturn(){const p=new URLSearchParams(location.search);if(!p
     const t=await r.json();if(!t.refresh_token)throw new Error(t.error_description||t.error||"Google gave no refresh token - remove the app at myaccount.google.com/permissions and try again");
     const me=await (await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",{headers:{Authorization:"Bearer "+t.access_token}})).json();
     const title=(((me.items||[])[0]||{}).snippet||{}).title;if(!title)throw new Error("This Google account has no YouTube channel.");
-    await setSecret("YT_TOKEN_"+pend.id.toUpperCase(),JSON.stringify({type:"authorized_user",client_id:S.gid,client_secret:S.gsec,refresh_token:t.refresh_token}));
+    const sealed=await vaultSeal(JSON.stringify({type:"authorized_user",client_id:S.gid,client_secret:S.gsec,refresh_token:t.refresh_token}));
+    let sha=null;try{sha=(await gh(`${R()}/contents/fleet/tokens/${pend.id}.txt?ref=${BRANCH}`)).sha}catch(e){}
+    await putRaw(`fleet/tokens/${pend.id}.txt`,btoa(sealed+"\n"),`YouTube login for ${pend.id} (sealed)`,sha);
     await mutate("fleet/channels.json",[],cs=>{const c=cs.find(x=>x.id===pend.id);if(c)c.yt_title=title},`connect YouTube ${pend.id}`);
-    msg("#cTopMsg",`Connected to YouTube channel "${title}". The token is stored as an encrypted GitHub secret.`);load()}
+    msg("#cTopMsg",`Connected to YouTube channel "${title}". The login is sealed: only your cloud runner can open it.`);load()}
   catch(e){msg("#cTopMsg","YouTube connect failed: "+e.message,1)}}
 
 /* settings */
@@ -403,7 +413,7 @@ $("#sKeysBtn").onclick=e=>busy(e.target,async()=>{try{const out=[];if($("#sPx").
 async function secretsStatus(){try{const j=await gh(`${R()}/actions/secrets?per_page=100`),n=new Set((j.secrets||[]).map(x=>x.name));
   const row=(k,l,opt)=>`${n.has(k)?"✅":(opt?"➖":"❌")} ${l}${n.has(k)?" - saved":(opt?" - not set (optional)":" - missing")}`;
   $("#sSecrets").innerHTML=[row("PEXELS_API_KEY","Pexels key"),row("GEMINI_API_KEY","Gemini key",1),row("YT_COOKIES","YouTube cookies",1)].join("<br>")+
-  `<br>YouTube connected channels: ${[...n].filter(x=>x.startsWith("YT_TOKEN_")).length}`}catch(e){$("#sSecrets").textContent="Cannot read saved keys: "+e.message}}
+  `<br>${row("FLEET_VAULT_KEY","Vault key (made automatically when you connect the first channel)",1)}<br>YouTube connected channels: ${D.channels.filter(c=>c.yt_title).length}`}catch(e){$("#sSecrets").textContent="Cannot read saved keys: "+e.message}}
 $("#sCkBtn").onclick=e=>busy(e.target,async()=>{const f=$("#sCk").files[0];if(!f)return;try{await setSecret("YT_COOKIES",await f.text());$("#sCkMsg").textContent="✓ Saved as secret YT_COOKIES";secretsStatus()}catch(err){$("#sCkMsg").textContent=err.message}});
 $("#sTokBtn").onclick=async()=>{const t=$("#sTok").value.trim();if(!t)return;const old=S.token;S.token=t;try{await gh(R());await saveProfile();$("#sTok").value="";msg("#sTokMsg","Token saved.")}catch(e){S.token=old;msg("#sTokMsg","Token not accepted: "+e.message,1)}};
 async function usersView(){if(S.role!=="admin"){$("#uCard").classList.add("hide");return}
