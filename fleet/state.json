@@ -6,7 +6,8 @@
     "2026-11-18T07:27:00+00:00",
     "2026-11-20T07:27:00+00:00"
    ]
-  }
+  },
+  "50ab3e4e36ea": {}
  },
  "items": {
   "e6df1f4602ab": {
@@ -141,6 +142,35 @@
     "  uploaded https://youtu.be/rmk_h7-xr-I (public at 2026-11-20 23:27 UTC)",
     "  upload 73%",
     "  uploaded https://youtu.be/xbA4TDkMDrQ (public at 2026-11-21 15:27 UTC)"
+   ]
+  },
+  "392ec9799378": {
+   "status": "error",
+   "run": "44279830411",
+   "started": "2026-11-18T09:53:02+00:00",
+   "error": "",
+   "finished": "2026-11-18T10:01:47+00:00",
+   "retry_at": null,
+   "log": [
+    "== reference: Hjalmar Schacht: The Genius Who Funded Hitler’s War Machine Documentary",
+    "== 1. speech to text",
+    "speech to text (Groq whisper-large-v3-turbo, 44.3 min audio)...",
+    "  Groq speech-to-text failed (HTTP Error 400: Bad Request) - using the local model",
+    "speech to text (whisper base, 44.3 min audio)...",
+    "  5 min done",
+    "  language: en, 103 sentences",
+    "== 2. new title, description, tags, hashtags (AI)",
+    "  title: The Secret Economist Behind Nazi Germany",
+    "  thumbnail text: The Banker Who Funded Hitler",
+    "== 3. documentary: real archive photos & film for 171 sentences",
+    "  subject: Hjalmar Schacht (person, 1877-1918); other people: Adolf Hitler, William Leianart Schacht, Constanza Yostina von Eggers, Eddie, Horace Greeley, Luisa Sauva",
+    "  AI (gemini) try 1: HTTP Error 404: Not Found",
+    "  AI (gemini) try 1: HTTP Error 404: Not Found",
+    "  AI (pollinations) try 1: HTTP Error 402: Payment Required",
+    "  AI (gemini) try 1: HTTP Error 404: Not Found",
+    "  AI (gemini) try 1: HTTP Error 404: Not Found",
+    "  loading the visual matching model (CLIP)...",
+    "  Hjalmar Schacht: 48 real photos, 0 real film clips found"
    ]
   }
  }
