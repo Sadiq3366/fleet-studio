@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 
 import numpy as np
@@ -183,6 +184,36 @@ def plan(scenes, queries, topic_q, px, aspect, log=print, report=None):
 
 
 FPS = 30
+_PHOTO_LOCK = __import__("threading").BoundedSemaphore(2)
+
+
+def _fetch_image(s, folder):
+    """Downloads a documentary photo once (shared by every scene that uses it)."""
+    import hashlib
+    url = s["image"]
+    if not url.startswith("http"):
+        s["image_file"] = url
+        return os.path.isfile(url)
+    p = os.path.join(os.path.dirname(folder), "photos", hashlib.md5(url.encode()).hexdigest()[:16] + ".img")
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with _PHOTO_LOCK:                                 # Wikimedia allows only a few downloads at once
+        for n in range(5):
+            if os.path.isfile(p):
+                break
+            try:
+                ua = os.environ.get("MEDIA_USER_AGENT") or "FleetStudio/1.0 (open-source documentary video tool)"
+                with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=60) as r:
+                    data = r.read()
+                with open(p + ".part", "wb") as f:
+                    f.write(data)
+                os.replace(p + ".part", p)
+            except urllib.error.HTTPError as e:
+                wait = int(e.headers.get("Retry-After") or 0) if e.headers else 0
+                time.sleep(min(30, max(wait, 3 * (n + 1))))
+            except Exception:                         # noqa: BLE001
+                time.sleep(2 + n * 3)
+    s["image_file"] = p
+    return os.path.isfile(p)
 
 
 def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
@@ -195,11 +226,25 @@ def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
         net = ["-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"] if src.startswith("http") else []
         loop = ["-stream_loop", "-1"] if s.get("clip_dur", 0) < d + s.get("offset", 0) + 0.5 else []
         inp = [*net, *loop, "-ss", f"{s.get('offset', 0):.2f}", "-i", src]
+    elif s.get("image") and _fetch_image(s, os.path.dirname(out)):
+        # documentary photo: whole photo visible on a blurred copy of itself, slow Ken Burns move
+        inp = ["-i", s["image_file"]]
+        W2, H2, N = W * 2, H * 2, frames
+        z, x, y = {"in": ("1+0.12*on/{N}", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
+                   "out": ("1.12-0.12*on/{N}", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
+                   "left": ("1.12", "(iw-iw/zoom)*(1-on/{N})", "ih/2-(ih/zoom/2)"),
+                   "right": ("1.12", "(iw-iw/zoom)*on/{N}", "ih/2-(ih/zoom/2)")}[s.get("kb", "in")]
+        z, x, y = (e.replace("{N}", str(N)) for e in (z, x, y))
+        vf = None
+        graph0 = (f"[0:v]format=rgb24,split[pa][pb];[pa]scale={W2}:{H2}:force_original_aspect_ratio=increase,crop={W2}:{H2},"
+                  f"boxblur=40:4,eq=brightness=-0.18[pbg];[pb]scale={W2}:{H2}:force_original_aspect_ratio=decrease[pfg];"
+                  f"[pbg][pfg]overlay=(W-w)/2:(H-h)/2,zoompan=z='{z}':x='{x}':y='{y}':d={N}:s={W}x{H}:fps={FPS},"
+                  f"setsar=1,format=yuv420p[b0]")
     else:
         inp = ["-loop", "1", "-i", still]
         vf = (f"scale={int(W * 1.12)}:{int(H * 1.12)}:force_original_aspect_ratio=increase,crop={int(W * 1.12)}:{int(H * 1.12)},"
               f"crop={W}:{H}:'(iw-ow)/2+(iw-ow)/2*sin(t/9)':'(ih-oh)/2+(ih-oh)/2*cos(t/11)',setsar=1,fps={FPS},format=yuv420p")
-    graph, last, extra = f"[0:v]{vf}[b0]", "b0", []
+    graph, last, extra = (f"[0:v]{vf}[b0]" if vf else graph0), "b0", []
     if avatar:
         extra = ["-loop", "1", "-i", avatar]
         graph += f";[{last}][1:v]overlay=x={int(W * 0.015)}:y=H-h[b1]"
@@ -222,7 +267,8 @@ def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
         _seg(dict(s, clip=local), out, W, H, still, avatar, sub, frames, preset, log)
 
 
-def compose(work, scenes, segments, audio, out, aspect, still, avatar, t0=0.0, t1=None, log=print, tag="main", px=None):
+def compose(work, scenes, segments, audio, out, aspect, still, avatar, t0=0.0, t1=None, log=print, tag="main", px=None,
+            music=None, music_vol=0.18):
     """Clips for [t0,t1] + subtitles + avatar, rendered 4 scenes at a time, joined without re-encoding, + audio."""
     from concurrent.futures import ThreadPoolExecutor
     W, H = (1920, 1080) if aspect == "16:9" else (1080, 1920)
@@ -265,9 +311,16 @@ def compose(work, scenes, segments, audio, out, aspect, still, avatar, t0=0.0, t
     with open(lst, "w", encoding="utf-8") as f:
         f.writelines(f"file '{p.replace(os.sep, '/')}'\n" for _, p, _, _ in jobs)
     frames = sum(j[3] for j in jobs)
-    render._run([render.FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst,
-                 "-ss", f"{t0:.3f}", "-t", f"{frames / FPS:.3f}", "-i", audio, "-map", "0:v", "-map", "1:a",
-                 "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], log)
+    cmd = [render.FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst,
+           "-ss", f"{t0:.3f}", "-t", f"{frames / FPS:.3f}", "-i", audio]
+    if music:      # background music, pushed down automatically while the narrator speaks (sidechain ducking)
+        cmd += ["-stream_loop", "-1", "-i", music, "-filter_complex",
+                f"[1:a]asplit[va][vb];[2:a]volume={music_vol}[m];[m][vb]sidechaincompress=threshold=0.03:ratio=10:"
+                f"attack=15:release=400[md];[va][md]amix=inputs=2:duration=first:normalize=0[a]",
+                "-map", "0:v", "-map", "[a]"]
+    else:
+        cmd += ["-map", "0:v", "-map", "1:a"]
+    render._run(cmd + ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], log)
     shutil.rmtree(d, ignore_errors=True)
     return out
 

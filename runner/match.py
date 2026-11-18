@@ -24,8 +24,10 @@ class Matcher:
 
     @staticmethod
     def _frames(v):
-        """2-3 small preview frames of a Pexels video (start / middle / poster)."""
-        pics = [p.get("picture") for p in v.get("video_pictures") or [] if p.get("picture")]
+        """2-3 small preview frames of a Pexels video (start / middle / poster), or the given preview list."""
+        if v.get("preview"):
+            return v["preview"][:3]
+        pics =[p.get("picture") for p in v.get("video_pictures") or [] if p.get("picture")]
         urls = []
         if pics:
             urls += [pics[len(pics) // 4], pics[(3 * len(pics)) // 4]]

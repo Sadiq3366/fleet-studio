@@ -25,6 +25,7 @@ sys.path.insert(0, HERE)
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import ai  # noqa: E402
 import broll  # noqa: E402
+import documentary  # noqa: E402
 import render  # noqa: E402
 import speech  # noqa: E402
 
@@ -282,22 +283,42 @@ def produce(it, c, state):
             except Exception as e:                   # noqa: BLE001
                 log(f"  reference video blocked ({str(e)[:120]}) - using Pexels/thumbnail")
                 mode = "pexels"
-        if mode == "pexels" and px:
+        style = it.get("style") or c.get("style") or "viral"
+        music = repo_file(c.get("music")) if style == "documentary" else None
+        portrait, credits = None, []
+        if style == "documentary":
+            avatar = None                                  # documentaries: subtitles only, no avatar
+            log(f"== 3. documentary: real archive photos & film for {len(scenes)} sentences")
+            info = ai.documentary_info(transcript, it.get("subject") or c.get("subject") or "", SECRETS, log)
+            log(f"  subject: {info.get('subject')} ({info.get('subject_type')}, {info.get('years', '')}); "
+                f"other people: {', '.join(info.get('people', [])[:6]) or '-'}")
+            per = ai.documentary_scenes(scenes, info, SECRETS, log)
+            scenes, credits, portrait = documentary.plan(scenes, info, per, px, aspect, log,
+                                                         report=os.path.join(work, "clip_matches.txt"))
+        elif mode == "pexels" and px:
             log(f"== 3. stock clips for {len(scenes)} scenes (Pexels)")
             queries, english = ai.scene_queries(scenes, meta["title"], SECRETS, log)
             if not english:
                 px.locale = LOCALES.get(lang)
             broll.plan(scenes, queries, topic_q, px, aspect, log, report=os.path.join(work, "clip_matches.txt"))
 
-        log(f"== 4. video {aspect} with subtitles + avatar ({total / 60:.1f} min)")
-        main = broll.compose(work, scenes, segments, audio, os.path.join(work, "video.mp4"), aspect, still, avatar, log=log, px=px)
+        log(f"== 4. video {aspect} with subtitles{' + avatar' if avatar else ''}{' + music' if music else ''} ({total / 60:.1f} min)")
+        main = broll.compose(work, scenes, segments, audio, os.path.join(work, "video.mp4"), aspect, still, avatar,
+                             log=log, px=px, music=music)
+        if credits:
+            meta["description"] += "\n\n" + documentary.credits_text(credits)
 
         log("== 5. thumbnail")
         thumb = repo_file(it.get("thumb"))
         if thumb:
             thumb = shutil.copy(thumb, os.path.join(work, "thumbnail" + os.path.splitext(thumb)[1]))
         else:
-            photo = px.photo(topic_q) if px else None
+            photo = None
+            if portrait:                                   # documentary: best real portrait of the subject
+                tmp = {"image": portrait}
+                photo = tmp["image_file"] if broll._fetch_image(tmp, os.path.join(work, "x")) else None
+            if not photo and px:
+                photo = px.photo(topic_q)
             thumb = render.thumbnail(work, meta["thumbnail_text"], photo, ref_th, avatar, meta.get("highlight"), log=log)
 
         shorts = []
@@ -305,7 +326,7 @@ def produce(it, c, state):
             log("== 6. vertical Shorts")
             for n, (a, b) in enumerate(broll.pick_short_windows(segments, total)):
                 shorts.append(broll.compose(work, scenes, segments, audio, os.path.join(work, f"short_{n + 1}.mp4"),
-                                            "9:16", still, avatar, a, b, log, tag=f"short{n + 1}", px=px))
+                                            "9:16", still, avatar, a, b, log, tag=f"short{n + 1}", px=px, music=music))
         shutil.rmtree(os.path.join(work, "clips"), ignore_errors=True)
 
         yt_ids = list(res.get("youtube") or [])            # a retry after the daily limit skips what is already up
@@ -372,12 +393,22 @@ def main():
                             "Los grandes campeones entrenan en el gimnasio todos los días. Cuando sientas que quieres "
                             "rendirte, mira a tu familia y recuerda por qué empezaste. El éxito es como subir una montaña: "
                             "paso a paso hasta llegar a la cima.")
+        doc = os.environ.get("TEST_STYLE") == "documentary"
+        if doc and not a.handle:
+            text = ("Michael Jackson was born in Gary, Indiana, in 1958. As a child he became the lead singer of the "
+                    "Jackson 5 with his brothers. In 1982 he released Thriller, the best-selling album of all time. "
+                    "In 1984 President Ronald Reagan honored him at the White House. His famous moonwalk amazed "
+                    "audiences around the world. During the Dangerous World Tour in 1992 he performed for millions of "
+                    "fans. He died in Los Angeles in 2009, and the whole world mourned the King of Pop.")
         os.makedirs(os.path.join(ROOT, "inbox"), exist_ok=True)
-        voice = os.environ.get("TEST_VOICE") or "es-MX-JorgeNeural"
+        voice = os.environ.get("TEST_VOICE") or ("en-US-GuyNeural" if doc else "es-MX-JorgeNeural")
+        if doc and voice.startswith("es-") and not a.handle:
+            voice = "en-US-GuyNeural"
         subprocess.run([sys.executable, "-m", "edge_tts", "--voice", voice, "--text", text,
                         "--write-media", os.path.join(ROOT, "inbox", "test-audio.mp3")], check=True)
         it = {"id": "test", "channel_id": "test", "audio": "inbox/test-audio.mp3", "aspect": "16:9", "shorts": False,
-              "upload": False, "background": "pexels", "title": ""}
+              "upload": False, "background": "pexels", "title": "", "style": os.environ.get("TEST_STYLE") or "viral",
+              "subject": os.environ.get("TEST_SUBJECT") or ""}
         ok = produce(it, {"id": "test", "name": "test"}, state)
         log = state["items"]["test"].get("log", [])
         summary("Test video and clip_matches.txt are in this run's Artifacts.\n\n```\n" + "\n".join(log[-25:]) + "\n```")

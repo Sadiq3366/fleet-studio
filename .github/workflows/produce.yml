@@ -9,6 +9,8 @@ on:
       handle:  { description: "reference channel @handle (import)", default: "" }
       title:   { description: "label for the run list", default: "" }
       voice:   { description: "voice for test mode", default: "" }
+      style:   { description: "viral | documentary (test mode)", default: "" }
+      subject: { description: "documentary subject (test mode)", default: "" }
   schedule:
     - cron: "17 */2 * * *"          # autopilot every 2 hours
 permissions:
@@ -44,6 +46,8 @@ jobs:
           CHANNEL: ${{ inputs.channel }}
           HANDLE: ${{ inputs.handle }}
           TEST_VOICE: ${{ inputs.voice }}
+          TEST_STYLE: ${{ inputs.style }}
+          TEST_SUBJECT: ${{ inputs.subject }}
         run: python runner/fleet.py "$MODE" --item "$ITEM" --channel "$CHANNEL" --handle "$HANDLE"
       - name: Keep the files of this run (7 days)
         if: always()

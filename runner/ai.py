@@ -147,3 +147,68 @@ Return JSON: {{"q": [["q1","q2","q3"], ...]}} with exactly {len(chunk)} items, s
             out[b + i] = item
         time.sleep(3)
     return out, english
+
+
+# ------------------------------------------------------------------ documentary
+PRONOUNS = re.compile(r"\b(he|him|his|she|her|hers|él|ella|su|sus|lui|elle|er|sie|ele|ela|वह|उसने|उसका|اس|وہ)\b", re.I)
+
+
+def documentary_info(transcript, subject_hint, secrets, log=print):
+    """Who/what the documentary is about."""
+    prompt = f"""Read this documentary narration and identify what it is about.
+{('The user says the main subject is: ' + subject_hint) if subject_hint else ''}
+Narration (start): {transcript[:6000]}
+Return JSON: {{"subject": "full name of the main person/thing as written in English Wikipedia",
+"aliases": ["other names used for the subject, e.g. nickname, last name"],
+"subject_type": "person | place | event | topic",
+"people": ["other real people named in the narration, full names"],
+"years": "e.g. 1958-2009",
+"topic_stock": "2-3 English words for generic stock footage matching the mood"}}"""
+    j = llm_json(prompt, secrets, log) or {}
+    if subject_hint:
+        j["subject"] = subject_hint
+    if not j.get("subject"):                      # no AI: most frequent capitalised name
+        names = re.findall(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b", transcript)
+        j["subject"] = max(set(names), key=names.count) if names else ""
+    j.setdefault("aliases", [])
+    j.setdefault("subject_type", "person")
+    return j
+
+
+def documentary_scenes(scenes, info, secrets, log=print):
+    """Per sentence: who is shown, which year, archive search words, stock search words."""
+    out = [None] * len(scenes)
+    subject = info.get("subject", "")
+    for b in range(0, len(scenes), 30):
+        chunk = scenes[b:b + 30]
+        lines = "\n".join(f"{i + 1}. {s['text'][:240]}" for i, s in enumerate(chunk))
+        prompt = f"""Documentary about: {subject} ({info.get('subject_type', 'person')}, {info.get('years', '')}).
+Other people: {', '.join(info.get('people', [])[:15])}
+For EACH numbered narration sentence decide what the picture must show. Return JSON:
+{{"s": [{{"who": "subject" | "<full name of another real person shown>" | "none",
+         "year": year the sentence is about (number) or null,
+         "archive": "English search words for real archive photos on Wikimedia Commons: names + event/place/object + year, 2-6 words",
+         "stock": "English stock-footage words WITHOUT names for a generic matching shot, 2-4 words"}}, ...]}}
+Use the sentences around for context (he/she/they usually means the subject). Exactly {len(chunk)} items, same order.
+{lines}"""
+        j = llm_json(prompt, secrets, log) or {}
+        items = j.get("s") if isinstance(j, dict) else j
+        prev_year = None
+        for i, s in enumerate(chunk):
+            it = items[i] if isinstance(items, list) and i < len(items) and isinstance(items[i], dict) else {}
+            if not it:                                # fallback rules
+                about = subject and (subject.split()[-1].lower() in s["text"].lower() or PRONOUNS.search(s["text"]))
+                it = {"who": "subject" if about else "none",
+                      "archive": f"{subject} {_fallback_query(s['text'])}" if about else _fallback_query(s["text"]),
+                      "stock": _fallback_query(s["text"])}
+            y = it.get("year")
+            try:
+                y = int(str(y)[:4]) if y else None
+            except ValueError:
+                y = None
+            m = re.search(r"\b(1[89]\d\d|20[0-3]\d)\b", s["text"])
+            it["year"] = int(m.group(1)) if m else (y or prev_year)
+            prev_year = it["year"]
+            out[b + i] = it
+        time.sleep(2)
+    return out

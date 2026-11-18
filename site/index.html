@@ -82,7 +82,9 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
     </div>
     <div class="row">
       <div><label>Format</label><select id="pAspect"><option value="16:9">16:9 full video</option><option value="9:16">9:16 vertical Shorts</option></select></div>
-      <div><label>Background</label><select id="pBg"><option value="pexels">Pexels clips matched to every sentence (recommended)</option><option value="video">Reference video (muted)</option><option value="image">Thumbnail with slow motion</option></select></div>
+      <div><label>Video style</label><select id="pStyle"><option value="viral">Viral - Pexels clips + avatar</option><option value="documentary">Documentary - real archive photos &amp; film, subtitles only</option></select></div>
+      <div id="pSubjBox" class="hide"><label>Main subject (optional - AI finds it)</label><input id="pSubject" placeholder="Michael Jackson"></div>
+      <div id="pBgBox"><label>Background</label><select id="pBg"><option value="pexels">Pexels clips matched to every sentence (recommended)</option><option value="video">Reference video (muted)</option><option value="image">Thumbnail with slow motion</option></select></div>
       <div><label>Publishing schedule</label><select id="pSched">
         <option value="auto48">Auto 2-day gap (48h)</option><option value="auto72" selected>Auto 3-day gap (72h) - recommended</option>
         <option value="auto96">Auto 4-day gap (96h)</option><option value="now">Publish immediately (public)</option></select></div>
@@ -106,6 +108,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
     <h3>Test clip matching (no upload)</h3>
     <div class="mute">The cloud reads your text with an AI voice, picks a Pexels clip for every sentence, and makes a short test video plus <b>clip_matches.txt</b>, which lists which clip was chosen for which sentence and its match score. Leave the box empty to use a Spanish sample.</div>
     <label>Text (optional)</label><input id="tText" placeholder="Write 4-6 sentences like your videos...">
+    <label>Style</label><select id="tStyle"><option value="viral">Viral (Pexels)</option><option value="documentary">Documentary (real archive)</option></select>
     <label>Voice</label><select id="tVoice"><option value="es-MX-JorgeNeural">Spanish (Mexico) - male</option><option value="es-ES-ElviraNeural">Spanish (Spain) - female</option>
       <option value="en-US-GuyNeural">English - male</option><option value="hi-IN-MadhurNeural">Hindi - male</option><option value="ur-PK-AsadNeural">Urdu - male</option><option value="pt-BR-AntonioNeural">Portuguese - male</option></select>
     <div class="btns"><button class="btn sec" id="tGo">Run test in the cloud</button><span id="tMsg" class="mute"></span></div>
@@ -146,6 +149,11 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
     <div class="row">
       <div><label>Credit line at top of every description</label><input id="cCredit" placeholder="Used with permission of ..."></div>
       <div><label>Owner portal (profile username)</label><input id="cOwner"></div>
+    </div>
+    <div class="row">
+      <div><label>Channel style</label><select id="cStyle"><option value="viral">Viral - Pexels clips + avatar</option><option value="documentary">Documentary - real archive photos &amp; film, subtitles only</option></select></div>
+      <div><label>Usual documentary subject (optional)</label><input id="cSubject" placeholder="leave empty - AI finds it per video"></div>
+      <div><label>Background music for documentaries (MP3, optional)</label><input type="file" id="cMusic" accept=".mp3,.m4a,.wav,.ogg"><div class="mute" id="cMusicNow"></div></div>
     </div>
     <label class="chk"><input type="checkbox" id="cShorts" checked>Auto-extract 2 Shorts for every video</label>
     <div class="btns"><button class="btn" id="cSave">Save channel</button><button class="btn sec" id="cNew">New</button></div>
@@ -325,7 +333,7 @@ async function produce(now_){const btn=now_?"#pGo":"#pAdd";await busy(btn,async(
   const url=$("#pUrl").value.trim(),vid=(url.match(/(?:v=|youtu\.be\/|shorts\/|live\/)([\w-]{11})/)||[])[1]||null,id=rid();
   const audio=$("#pAudio").files[0]||bridgeAudio;if(!url&&!audio)throw new Error("Give a reference URL or an audio file.");
   msg("#pMsg","Uploading files to the cloud...");
-  const it={id,channel_id:cid,ref_url:url,video_id:vid,title:$("#pTitle").value.trim(),aspect:$("#pAspect").value,background:$("#pBg").value,
+  const it={id,channel_id:cid,ref_url:url,video_id:vid,title:$("#pTitle").value.trim(),aspect:$("#pAspect").value,background:$("#pBg").value,style:$("#pStyle").value,subject:$("#pSubject").value.trim(),
     shorts:$("#pShorts").checked,upload:$("#pUpload").checked,schedule:$("#pSched").value,created:new Date().toISOString(),by:S.user};
   const ext=f=>(f.name.match(/\.\w+$/)||[".bin"])[0].toLowerCase();
   if(audio)it.audio=await putFile(`inbox/${id}-audio${ext(audio)}`,audio,`audio for ${id}`);
@@ -337,7 +345,8 @@ async function produce(now_){const btn=now_?"#pGo":"#pAdd";await busy(btn,async(
   ["#pUrl","#pTitle"].forEach(s=>$(s).value="");["#pAudio","#pThumb","#pSpeaker"].forEach(s=>$(s).value="");bridgeAudio=null;$("#pBridgeMsg").textContent="";load()}
   catch(e){msg("#pMsg",e.message,1)}})}
 $("#pGo").onclick=()=>produce(1);$("#pAdd").onclick=()=>produce(0);
-$("#pChan").onchange=()=>{const c=D.channels.find(x=>x.id===$("#pChan").value);if(c){$("#pAspect").value=c.aspect||"16:9";$("#pSched").value=c.schedule;$("#pShorts").checked=!!c.shorts}};
+$("#pStyle").onchange=()=>{const doc=$("#pStyle").value==="documentary";$("#pSubjBox").classList.toggle("hide",!doc);$("#pBgBox").classList.toggle("hide",doc)};
+$("#pChan").onchange=()=>{const c=D.channels.find(x=>x.id===$("#pChan").value);if(c){$("#pStyle").value=c.style||"viral";$("#pSubject").value=c.subject||"";$("#pStyle").onchange();$("#pAspect").value=c.aspect||"16:9";$("#pSched").value=c.schedule;$("#pShorts").checked=!!c.shorts}};
 async function bridgeGet(url){const r=await fetch(`${BRIDGE}/audio?url=${encodeURIComponent(url)}`);if(!r.ok)throw new Error(await r.text()||"bridge error");
   const name=(r.headers.get("X-Filename")||"audio.m4a");return new File([await r.blob()],name)}
 $("#pBridge").onclick=e=>busy(e.target,async()=>{const u=$("#pUrl").value.trim();if(!u)return $("#pBridgeMsg").textContent="Paste the reference URL first.";
@@ -351,7 +360,7 @@ $("#iGo").onclick=e=>busy(e.target,async()=>{try{const c=D.channels.find(x=>x.id
   const h=$("#iHandle").value.trim()||c.reference;if(!h)throw new Error("Type the reference channel.");
   await dispatch({mode:"import",channel:c.id,handle:h,title:`${c.name} <- ${h}`.slice(0,80)});msg("#iMsg","Import started in the cloud. The queue fills in about 1 minute.")}catch(err){msg("#iMsg",err.message,1)}});
 
-$("#tGo").onclick=e=>busy(e.target,async()=>{try{await dispatch({mode:"test",handle:$("#tText").value.trim().slice(0,1500),voice:$("#tVoice").value,title:"clip matching test"});
+$("#tGo").onclick=e=>busy(e.target,async()=>{try{await dispatch({mode:"test",handle:$("#tText").value.trim().slice(0,1500),voice:$("#tVoice").value,style:$("#tStyle").value,title:$("#tStyle").value+" test"});
   $("#tMsg").innerHTML=`Started. In about 5-8 minutes open <b>Cloud runs</b>, then the run, then <b>Artifacts</b>, and download the video and clip_matches.txt.`}catch(err){$("#tMsg").textContent=err.message}});
 /* queue */
 $("#qChan").onchange=draw;
@@ -371,16 +380,17 @@ $("#qBridge").onclick=e=>busy(e.target,async()=>{const ids=new Set(mine().map(c=
 /* channels */
 window.setAuto=(id,on)=>busy(null,async()=>{await mutate("fleet/channels.json",[],cs=>{const c=cs.find(x=>x.id===id);if(c)c.autopilot=on},`autopilot ${on?"on":"off"} ${id}`);load()});
 window.editC=id=>{const c=D.channels.find(x=>x.id===id);$("#cFormTitle").textContent="Edit channel";$("#cId").value=c.id;$("#cName").value=c.name;$("#cSpeaker").value=c.speaker||"";
-  $("#cRef").value=c.reference||"";$("#cSched").value=c.schedule;$("#cAspect").value=c.aspect||"16:9";$("#cCredit").value=c.credit||"";$("#cShorts").checked=!!c.shorts;$("#cOwner").value=c.owner||"";$("#cName").focus()};
+  $("#cRef").value=c.reference||"";$("#cSched").value=c.schedule;$("#cAspect").value=c.aspect||"16:9";$("#cCredit").value=c.credit||"";$("#cShorts").checked=!!c.shorts;$("#cOwner").value=c.owner||"";$("#cStyle").value=c.style||"viral";$("#cSubject").value=c.subject||"";$("#cMusicNow").textContent=c.music?"Music saved: "+c.music.split("/").pop():"";$("#cName").focus()};
 window.delC=id=>busy(null,async()=>{if(!confirm("Delete this channel and its queue?"))return;await mutate("fleet/channels.json",[],cs=>cs.filter(x=>x.id!==id),`delete channel ${id}`);
   await mutate("fleet/queue.json",[],q=>q.filter(x=>x.channel_id!==id),`clear queue of ${id}`);await delFile(`fleet/tokens/${id}.txt`,`remove YouTube login ${id}`);load()});
 $("#cNew").onclick=()=>{$("#cFormTitle").textContent="Add channel";["#cId","#cName","#cSpeaker","#cRef","#cCredit","#cOwner"].forEach(s=>$(s).value="");$("#cAvatar").value=""};
 $("#cSave").onclick=e=>busy(e.target,async()=>{try{const id=$("#cId").value||rid();let avatar=null;
   if($("#cAvatar").files[0])avatar=await putFile(`assets/${id}.png`,$("#cAvatar").files[0],`avatar for ${id}`);
+  let music=null;if($("#cMusic").files[0])music=await putFile(`assets/${id}-music${($("#cMusic").files[0].name.match(/\.\w+$/)||[".mp3"])[0].toLowerCase()}`,$("#cMusic").files[0],`music for ${id}`);
   await mutate("fleet/channels.json",[],cs=>{let c=cs.find(x=>x.id===id);if(!c){c={id,autopilot:false};cs.push(c)}
     Object.assign(c,{name:$("#cName").value.trim()||"My channel",speaker:$("#cSpeaker").value.trim(),reference:$("#cRef").value.trim(),schedule:$("#cSched").value,
-      aspect:$("#cAspect").value,credit:$("#cCredit").value.trim(),shorts:$("#cShorts").checked,owner:$("#cOwner").value.trim().toLowerCase()||S.user});
-    if(avatar){c.avatar=avatar;c.avv=Date.now()}},`save channel ${id}`);$("#cId").value=id;msg("#cMsg","Saved.");load()}catch(err){msg("#cMsg",err.message,1)}});
+      aspect:$("#cAspect").value,credit:$("#cCredit").value.trim(),shorts:$("#cShorts").checked,owner:$("#cOwner").value.trim().toLowerCase()||S.user,style:$("#cStyle").value,subject:$("#cSubject").value.trim()});
+    if(avatar){c.avatar=avatar;c.avv=Date.now()}if(music)c.music=music;},`save channel ${id}`);$("#cId").value=id;msg("#cMsg","Saved.");load()}catch(err){msg("#cMsg",err.message,1)}});
 
 /* Google sign-in -> refresh token -> encrypted GitHub secret YT_TOKEN_<CHANNEL> */
 const SCOPES="https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly";
