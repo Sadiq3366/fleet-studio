@@ -9,12 +9,13 @@
    ]
   },
   "50ab3e4e36ea": {
-   "last_slot": "2026-11-30T13:17:00+00:00",
+   "last_slot": "2026-12-04T13:17:00+00:00",
    "slots": [
     "2026-11-18T13:17:00+00:00",
     "2026-11-22T13:17:00+00:00",
     "2026-11-26T13:17:00+00:00",
-    "2026-11-30T13:17:00+00:00"
+    "2026-11-30T13:17:00+00:00",
+    "2026-12-04T13:17:00+00:00"
    ]
   }
  },
@@ -487,6 +488,73 @@
     "  uploaded https://youtu.be/76p2fxZ4H24 (public at 2026-12-01 21:17 UTC)",
     "  uploading short_2.mp4 (3 MB)",
     "  uploaded https://youtu.be/AMCs6evWVss (public at 2026-12-03 05:17 UTC)"
+   ]
+  },
+  "3d28e2d8c864": {
+   "status": "done",
+   "run": "44464267127",
+   "started": "2026-11-19T05:20:11+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "JV08tTw1Byg",
+     "publish": "2026-12-04T13:17:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "2sUp5zcn9UE",
+     "publish": "2026-12-05T21:17:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "M9eRAYNg4XA",
+     "publish": "2026-12-07T05:17:00+00:00"
+    }
+   ],
+   "finished": "2026-11-19T06:25:49+00:00",
+   "title": "Hjalmar Schacht: The Banker Behind Hitler’s Economic Miracle | Full Documentary",
+   "log": [
+    "  scenes 275/298, match score -0.756",
+    "  25 archive files could not be downloaded - the next best real photo was used instead",
+    "  average match score -0.618; 195 photos, 88 film clips",
+    "  15 scenes had no picture - they show the picture of the scene next to them",
+    "== 4. video 16:9 with subtitles + music (38.8 min)",
+    "  main: 298 scenes, 38.8 min, 4 at a time (superfast)",
+    "  main: 40/298 scenes ready",
+    "  main: 80/298 scenes ready",
+    "  main: 120/298 scenes ready",
+    "  main: 160/298 scenes ready",
+    "  main: 200/298 scenes ready",
+    "  main: 240/298 scenes ready",
+    "  main: 280/298 scenes ready",
+    "== 5. thumbnail",
+    "  thumbnail words: ['BANKER OF POWER',",
+    "  removing the avatar background (rembg)...",
+    "documentary thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: the long video's archive pictures for 6 sentences",
+    "  short1: 6 scenes, 0.8 min, 4 at a time (veryfast)",
+    "  short 2: the long video's archive pictures for 8 sentences",
+    "  short2: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1070 MB)",
+    "  upload 1%",
+    "  upload 12%",
+    "  upload 23%",
+    "  upload 34%",
+    "  upload 45%",
+    "  upload 56%",
+    "  upload 67%",
+    "  upload 78%",
+    "  upload 89%",
+    "  uploaded https://youtu.be/JV08tTw1Byg (public at 2026-12-04 13:17 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (21 MB)",
+    "  upload 78%",
+    "  uploaded https://youtu.be/2sUp5zcn9UE (public at 2026-12-05 21:17 UTC)",
+    "  uploading short_2.mp4 (13 MB)",
+    "  uploaded https://youtu.be/M9eRAYNg4XA (public at 2026-12-07 05:17 UTC)"
    ]
   }
  }
