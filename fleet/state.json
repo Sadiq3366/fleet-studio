@@ -1,13 +1,14 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-11-29T07:27:00+00:00",
+   "last_slot": "2026-12-02T07:27:00+00:00",
    "slots": [
     "2026-11-18T07:27:00+00:00",
     "2026-11-20T07:27:00+00:00",
     "2026-11-23T07:27:00+00:00",
     "2026-11-26T07:27:00+00:00",
-    "2026-11-29T07:27:00+00:00"
+    "2026-11-29T07:27:00+00:00",
+    "2026-12-02T07:27:00+00:00"
    ]
   },
   "50ab3e4e36ea": {
@@ -691,6 +692,73 @@
     "  uploaded https://youtu.be/Ed0KWMfp1o8 (public at 2026-11-30 07:27 UTC)",
     "  uploading short_2.mp4 (13 MB)",
     "  uploaded https://youtu.be/Hpk1z549Qvc (public at 2026-12-01 07:27 UTC)"
+   ]
+  },
+  "839c5611ac0d": {
+   "status": "done",
+   "run": "44502921065",
+   "started": "2026-11-19T10:10:20+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "uxtayntePD8",
+     "publish": "2026-12-02T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "9gr7ssAqTtk",
+     "publish": "2026-12-03T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "Ibpqg03-Bzc",
+     "publish": "2026-12-04T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-19T11:12:23+00:00",
+   "title": "SI NINGUNO BUSCA AL OTRO, ESTO ES LO QUE ESTÁ PASANDO | WALTER RISO",
+   "log": [
+    "  clips 275/315 (pexels calls 180, match score 0.297)",
+    "  clips 300/315 (pexels calls 180, match score 0.277)",
+    "  average match score 0.366",
+    "== 4. video 16:9 with subtitles + avatar (38.0 min)",
+    "  main: 315 scenes, 38.0 min, 4 at a time (superfast)",
+    "  main: 40/315 scenes ready",
+    "  main: 80/315 scenes ready",
+    "  main: 120/315 scenes ready",
+    "  main: 160/315 scenes ready",
+    "  main: 200/315 scenes ready",
+    "  main: 240/315 scenes ready",
+    "  main: 280/315 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 8 scenes, 0.8 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 6 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 6 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1182 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 21%",
+    "  upload 31%",
+    "  upload 41%",
+    "  upload 51%",
+    "  upload 61%",
+    "  upload 72%",
+    "  upload 82%",
+    "  upload 92%",
+    "  uploaded https://youtu.be/uxtayntePD8 (public at 2026-12-02 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 88%",
+    "  uploaded https://youtu.be/9gr7ssAqTtk (public at 2026-12-03 07:27 UTC)",
+    "  uploading short_2.mp4 (16 MB)",
+    "  uploaded https://youtu.be/Ibpqg03-Bzc (public at 2026-12-04 07:27 UTC)"
    ]
   }
  }
