@@ -521,9 +521,35 @@ def main():
         c = channels.get(it["channel_id"])
         if not c:
             continue
+        if a.mode != "produce" and latest_state()["items"].get(it["id"], {}).get("status") == "done":
+            print(f"{it['id']} was already made by another run - skipped")
+            continue
         produce(it, c, state)
+        state = merge_state(state, it["id"], c["id"])
         wj("state.json", state)
         commit(f"run: {state['items'][it['id']].get('status')} {it['id']}", ["fleet", "inbox"])
+
+
+def latest_state():
+    """state.json as it is NOW on GitHub (other runs may have saved results since this run started)."""
+    git("fetch", "-q", "origin", check=False)
+    br = git("rev-parse", "--abbrev-ref", "HEAD", check=False).stdout.strip() or "main"
+    try:
+        s = json.loads(git("show", f"origin/{br}:fleet/state.json", check=False).stdout)
+    except ValueError:
+        s = rj("state.json", {})
+    s.setdefault("items", {})
+    s.setdefault("channels", {})
+    return s
+
+
+def merge_state(mine, item_id, chan_id):
+    """Only OUR video's result (and our channel's schedule) go into the newest state - before, the whole old copy
+    was written back, results of other runs were lost and a finished video could be made + uploaded twice."""
+    s = latest_state()
+    s["items"][item_id] = mine["items"].get(item_id, {})
+    s["channels"].setdefault(chan_id, {}).update(mine["channels"].get(chan_id, {}))
+    return s
 
 
 if __name__ == "__main__":
