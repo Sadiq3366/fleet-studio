@@ -301,6 +301,13 @@ def produce(it, c, state):
                 mode = "pexels"
         style = it.get("style") or c.get("style") or "viral"
         music = repo_file(c.get("music")) if style == "documentary" else None
+        mvol = 0.06
+        if music and render.has_background(audio, total):
+            log("  the narration already has background music/sound -> no extra music added")
+            music = None
+        elif music:
+            mvol = render.music_volume(audio, music)
+            log(f"  background music volume {mvol:.3f} (about 24 dB under the voice)")
         portrait, credits = None, []
         queries, per = None, None
         if style == "documentary":
@@ -320,9 +327,10 @@ def produce(it, c, state):
                 px.locale = LOCALES.get(lang)
             broll.plan(scenes, queries, topic_q, px, aspect, log, report=os.path.join(work, "clip_matches.txt"))
 
+        broll.fill_gaps(scenes, log)                       # no empty/black scene anywhere in the video
         log(f"== 4. video {aspect} with subtitles{' + avatar' if avatar else ''}{' + music' if music else ''} ({total / 60:.1f} min)")
         main = broll.compose(work, scenes, segments, audio, os.path.join(work, "video.mp4"), aspect, still, avatar,
-                             log=log, px=px, music=music)
+                             log=log, px=px, music=music, music_vol=mvol)
         if credits:
             meta["description"] += "\n\n" + documentary.credits_text(credits)
 
@@ -361,14 +369,20 @@ def produce(it, c, state):
             # search words per sentence: viral = the clip queries, documentary = the stock words of each sentence
             sq = queries or ([[x for x in (q.get("stock"), q.get("archive")) if x] for q in per] if per else None)
             for n, (a, b) in enumerate(broll.pick_short_windows(segments, total)):
-                sscenes = scenes
-                if px and sq:                         # Shorts get their own VERTICAL HD videos matching each sentence
-                    idx = [k for k, sc in enumerate(scenes) if sc["end"] > a and sc["start"] < b]
-                    sscenes = [dict(scenes[k], clip=None, image=None, pexels=None) for k in idx]
+                idx = [k for k, sc in enumerate(scenes) if sc["end"] > a and sc["start"] < b]
+                sscenes = [dict(scenes[k]) for k in idx]
+                if style == "documentary":            # the same real archive photos/films as the long video
+                    log(f"  short {n + 1}: the long video's archive pictures for {len(sscenes)} sentences")
+                elif px and sq:                       # viral: own VERTICAL HD videos matching each sentence
                     log(f"  short {n + 1}: vertical HD videos for {len(sscenes)} sentences")
-                    broll.plan(sscenes, [sq[k] for k in idx], topic_q, px, "9:16", log)
+                    plan_s = [dict(sc, clip=None, image=None, pexels=None) for sc in sscenes]
+                    broll.plan(plan_s, [sq[k] for k in idx], topic_q, px, "9:16", log)
+                    # Pexels search limit used up -> keep the long video's clip for that sentence
+                    sscenes = [p if (p.get("clip") or p.get("image")) else o for p, o in zip(plan_s, sscenes)]
+                broll.fill_gaps(sscenes, log)
                 shorts.append(broll.compose(work, sscenes, segments, audio, os.path.join(work, f"short_{n + 1}.mp4"),
-                                            "9:16", still, None, a, b, log, tag=f"short{n + 1}", px=px, music=music))   # Shorts: no avatar
+                                            "9:16", still, None, a, b, log, tag=f"short{n + 1}", px=px,
+                                            music=music, music_vol=mvol))   # Shorts: no avatar
         shutil.rmtree(os.path.join(work, "clips"), ignore_errors=True)
 
         yt_ids = list(res.get("youtube") or [])            # a retry after the daily limit skips what is already up

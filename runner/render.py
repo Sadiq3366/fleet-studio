@@ -433,6 +433,32 @@ def audio_length(path, log=print):
     return real if real > 1 else claimed
 
 
+def mean_db(path, start=0.0, length=None):
+    """Average loudness in dB (ffmpeg volumedetect)."""
+    cmd = [FFMPEG, "-hide_banner", "-ss", f"{start:.1f}"] + (["-t", f"{length:.1f}"] if length else []) + \
+          ["-i", path, "-vn", "-af", "volumedetect", "-f", "null", "-"]
+    p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", creationflags=NO_WINDOW)
+    m = re.search(r"mean_volume: (-?[\d.]+) dB", p.stderr)
+    return float(m.group(1)) if m else None
+
+
+def has_background(audio, total):
+    """True when the narration already has music/ambience under the voice: no real silent pauses between sentences."""
+    start, length = max(0.0, total * 0.3), min(240.0, max(30.0, total * 0.4))
+    p = subprocess.run([FFMPEG, "-hide_banner", "-ss", f"{start:.1f}", "-t", f"{length:.1f}", "-i", audio, "-vn",
+                        "-af", "silencedetect=n=-45dB:d=0.25", "-f", "null", "-"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", creationflags=NO_WINDOW)
+    return p.stderr.count("silence_end") < max(3, length / 40)
+
+
+def music_volume(audio, music, gap_db=24.0):
+    """Volume factor so the music sits about `gap_db` under the voice, whatever loudness the music file has."""
+    v, m = mean_db(audio, 0, 600), mean_db(music)
+    if v is None or m is None:
+        return 0.06
+    return float(min(0.25, max(0.015, 10 ** ((v - gap_db - m) / 20))))
+
+
 def cut_audio(audio, keep, out, log=print):
     """Keeps only the given (start, end) parts of the voice track, joined with tiny fades (no clicks),
     and a soft fade-out at the very end."""

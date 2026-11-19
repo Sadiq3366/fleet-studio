@@ -268,7 +268,19 @@ def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
     if src and "wikimedia.org" in src:
         src = _wiki_film(src, os.path.dirname(out)) or None
         if not src and s.get("image") is None:
-            log("  a Wikimedia film could not be downloaded - using the still picture")
+            log("  a Wikimedia film could not be downloaded - using a nearby photo")
+    if not src and s.get("image") and not _fetch_image(s, os.path.dirname(out)):
+        for u in s.get("backup_images") or []:          # photo failed -> a photo of a neighbouring scene
+            s = dict(s, image=u)
+            if _fetch_image(s, os.path.dirname(out)):
+                break
+        else:
+            s = dict(s, image=None)
+    elif not src and not s.get("image"):
+        for u in s.get("backup_images") or []:
+            if _fetch_image(dict(s, image=u), os.path.dirname(out)):
+                s = dict(s, image=u)
+                break
     if src:
         net = ["-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"] if src.startswith("http") else []
         loop = ["-stream_loop", "-1"] if s.get("clip_dur", 0) < d + s.get("offset", 0) + 0.5 else []
@@ -283,14 +295,25 @@ def _seg(s, out, W, H, still, avatar, sub, frames, preset, log, px=None):
                    "right": ("1.12", "(iw-iw/zoom)*on/{N}", "ih/2-(ih/zoom/2)")}[s.get("kb", "in")]
         z, x, y = (e.replace("{N}", str(N)) for e in (z, x, y))
         vf = None
+        cx = None
         try:
             from PIL import Image as _I
             with _I.open(s["image_file"]) as _im:
                 wide = _im.width / max(1, _im.height) >= (W / H) * 0.78
+                if wide and H > W and _im.width > _im.height * 0.9:      # Short + wide photo: crop around the face
+                    small = _im.convert("RGB")
+                    small.thumbnail((640, 640))
+                    f = render._face(small)
+                    if f:
+                        sc = max(W2 / small.width, H2 / small.height)
+                        cx = min(max(0, int((f[0] + f[2] / 2) * sc - W2 / 2)), int(small.width * sc) - W2)
+                    else:
+                        wide = False                  # no face -> whole photo on a blurred copy of itself
         except Exception:                             # noqa: BLE001
             wide = False
         if wide:                                      # landscape photo: fills the whole screen
-            graph0 = (f"[0:v]format=rgb24,scale={W2}:{H2}:force_original_aspect_ratio=increase,crop={W2}:{H2},"
+            crop = f"crop={W2}:{H2}:{cx}:(ih-{H2})/2" if cx is not None else f"crop={W2}:{H2}"
+            graph0 = (f"[0:v]format=rgb24,scale={W2}:{H2}:force_original_aspect_ratio=increase,{crop},"
                       f"zoompan=z='{z}':x='{x}':y='{y}':d={N}:s={W}x{H}:fps={FPS},setsar=1,format=yuv420p[b0]")
         else:                                         # (only if a tall photo slips through) blurred side fill
             graph0 = (f"[0:v]format=rgb24,split[pa][pb];[pa]scale={W2}:{H2}:force_original_aspect_ratio=increase,crop={W2}:{H2},"
@@ -373,14 +396,35 @@ def compose(work, scenes, segments, audio, out, aspect, still, avatar, t0=0.0, t
            "-ss", f"{t0:.3f}", "-t", f"{frames / FPS:.3f}", "-i", audio]
     if music:      # background music, pushed down automatically while the narrator speaks (sidechain ducking)
         cmd += ["-stream_loop", "-1", "-i", music, "-filter_complex",
-                f"[1:a]asplit[va][vb];[2:a]volume={music_vol}[m];[m][vb]sidechaincompress=threshold=0.03:ratio=10:"
-                f"attack=15:release=400[md];[va][md]amix=inputs=2:duration=first:normalize=0[a]",
+                f"[1:a]asplit[va][vb];[2:a]volume={music_vol:.4f}[m];[m][vb]sidechaincompress=threshold=0.015:ratio=20:"
+                f"attack=10:release=600[md];[va][md]amix=inputs=2:duration=first:normalize=0[a]",
                 "-map", "0:v", "-map", "[a]"]
     else:
         cmd += ["-map", "0:v", "-map", "1:a"]
     render._run(cmd + ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], log)
     shutil.rmtree(d, ignore_errors=True)
     return out
+
+
+def fill_gaps(scenes, log=print):
+    """A scene without picture gets the picture of the nearest scene that has one (never an empty screen).
+    Every scene also keeps a few neighbour photos to try if its own photo cannot be downloaded."""
+    has = [i for i, s in enumerate(scenes) if s.get("clip") or s.get("image")]
+    if not has:
+        return scenes
+    media = ("clip", "clip_dur", "offset", "image", "kb", "pexels")
+    n = 0
+    for i, s in enumerate(scenes):
+        if not (s.get("clip") or s.get("image")):
+            j = min(has, key=lambda k: abs(k - i))
+            s.update({k: scenes[j].get(k) for k in media})
+            n += 1
+    imgs = [(i, s["image"]) for i, s in enumerate(scenes) if s.get("image")]
+    for i, s in enumerate(scenes):
+        s["backup_images"] = [u for _, u in sorted(imgs, key=lambda x: abs(x[0] - i)) if u != s.get("image")][:3]
+    if n:
+        log(f"  {n} scenes had no picture - they show the picture of the scene next to them")
+    return scenes
 
 
 def pick_short_windows(segments, duration, count=2, length=58):
