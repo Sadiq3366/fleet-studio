@@ -1,11 +1,12 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-11-23T07:27:00+00:00",
+   "last_slot": "2026-11-26T07:27:00+00:00",
    "slots": [
     "2026-11-18T07:27:00+00:00",
     "2026-11-20T07:27:00+00:00",
-    "2026-11-23T07:27:00+00:00"
+    "2026-11-23T07:27:00+00:00",
+    "2026-11-26T07:27:00+00:00"
    ]
   },
   "50ab3e4e36ea": {
@@ -555,6 +556,73 @@
     "  uploaded https://youtu.be/2sUp5zcn9UE (public at 2026-12-05 21:17 UTC)",
     "  uploading short_2.mp4 (13 MB)",
     "  uploaded https://youtu.be/M9eRAYNg4XA (public at 2026-12-07 05:17 UTC)"
+   ]
+  },
+  "ad7fa2f39a55": {
+   "status": "done",
+   "run": "44465239718",
+   "started": "2026-11-19T06:43:35+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "JGAj3CjsRSI",
+     "publish": "2026-11-26T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "V3dTfHk-xB0",
+     "publish": "2026-11-27T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "LOh7-Fj52FE",
+     "publish": "2026-11-28T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-19T07:12:34+00:00",
+   "title": "CUANDO AMBOS DEJAN DE BUSCARSE, EL SILENCIO LO CAMBIA TODO | WALTER RISO",
+   "log": [
+    "  clips 75/176 (pexels calls 76, match score 0.402)",
+    "  clips 100/176 (pexels calls 100, match score 0.391)",
+    "  clips 125/176 (pexels calls 125, match score 0.389)",
+    "  clips 150/176 (pexels calls 150, match score 0.404)",
+    "  clips 175/176 (pexels calls 177, match score 0.401)",
+    "  average match score 0.398",
+    "== 4. video 16:9 with subtitles + avatar (18.5 min)",
+    "  main: 176 scenes, 18.5 min, 4 at a time (superfast)",
+    "  main: 40/176 scenes ready",
+    "  main: 80/176 scenes ready",
+    "  main: 120/176 scenes ready",
+    "  main: 160/176 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 6 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  average match score 0.388",
+    "  short1: 6 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 10 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 10 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (545 MB)",
+    "  upload 3%",
+    "  upload 15%",
+    "  upload 27%",
+    "  upload 40%",
+    "  upload 52%",
+    "  upload 64%",
+    "  upload 76%",
+    "  upload 86%",
+    "  upload 98%",
+    "  uploaded https://youtu.be/JGAj3CjsRSI (public at 2026-11-26 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (13 MB)",
+    "  uploaded https://youtu.be/V3dTfHk-xB0 (public at 2026-11-27 07:27 UTC)",
+    "  uploading short_2.mp4 (20 MB)",
+    "  upload 82%",
+    "  uploaded https://youtu.be/LOh7-Fj52FE (public at 2026-11-28 07:27 UTC)"
    ]
   }
  }
