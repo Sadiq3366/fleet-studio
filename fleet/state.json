@@ -1,12 +1,13 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-11-26T07:27:00+00:00",
+   "last_slot": "2026-11-29T07:27:00+00:00",
    "slots": [
     "2026-11-18T07:27:00+00:00",
     "2026-11-20T07:27:00+00:00",
     "2026-11-23T07:27:00+00:00",
-    "2026-11-26T07:27:00+00:00"
+    "2026-11-26T07:27:00+00:00",
+    "2026-11-29T07:27:00+00:00"
    ]
   },
   "50ab3e4e36ea": {
@@ -623,6 +624,73 @@
     "  uploading short_2.mp4 (20 MB)",
     "  upload 82%",
     "  uploaded https://youtu.be/LOh7-Fj52FE (public at 2026-11-28 07:27 UTC)"
+   ]
+  },
+  "956056bd616d": {
+   "status": "done",
+   "run": "44478024383",
+   "started": "2026-11-19T07:21:48+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "R2aBWe14Crw",
+     "publish": "2026-11-29T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "Ed0KWMfp1o8",
+     "publish": "2026-11-30T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "Hpk1z549Qvc",
+     "publish": "2026-12-01T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-19T08:15:36+00:00",
+   "title": "CUANDO DEJAS DE HABLAR, TODO CAMBIA | WALTER RISO",
+   "log": [
+    "  clips 325/340 (pexels calls 180, match score 0.214)",
+    "  average match score 0.333",
+    "== 4. video 16:9 with subtitles + avatar (45.7 min)",
+    "  main: 340 scenes, 45.7 min, 4 at a time (superfast)",
+    "  main: 40/340 scenes ready",
+    "  main: 80/340 scenes ready",
+    "  main: 120/340 scenes ready",
+    "  main: 160/340 scenes ready",
+    "  main: 200/340 scenes ready",
+    "  main: 240/340 scenes ready",
+    "  main: 280/340 scenes ready",
+    "  main: 320/340 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 7 scenes, 1.0 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1382 MB)",
+    "  upload 1%",
+    "  upload 12%",
+    "  upload 23%",
+    "  upload 33%",
+    "  upload 43%",
+    "  upload 53%",
+    "  upload 63%",
+    "  upload 74%",
+    "  upload 84%",
+    "  upload 94%",
+    "  uploaded https://youtu.be/R2aBWe14Crw (public at 2026-11-29 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (21 MB)",
+    "  upload 81%",
+    "  uploaded https://youtu.be/Ed0KWMfp1o8 (public at 2026-11-30 07:27 UTC)",
+    "  uploading short_2.mp4 (13 MB)",
+    "  uploaded https://youtu.be/Hpk1z549Qvc (public at 2026-12-01 07:27 UTC)"
    ]
   }
  }
