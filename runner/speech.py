@@ -205,7 +205,7 @@ def scenes_from(segments, duration):
     # very long single scenes (music / silence) are split so the picture keeps changing
     out = []
     for s in scenes:
-        n = max(1, round((s["end"] - s["start"]) / 20))
+        n = max(1, -(-int(s["end"] - s["start"]) // 12))          # one picture at most ~12 s on screen
         step = (s["end"] - s["start"]) / n
         for i in range(n):
             out.append({"start": s["start"] + i * step, "end": s["start"] + (i + 1) * step, "text": s["text"]})
@@ -294,14 +294,21 @@ _GHOST = re.compile(r"^(thank(s| you)( so much)?( for (watching|listening))?|ple
                     r"gracias( por ver)?|suscr[ií]bete|obrigad[oa]|merci|danke|ok(ay)?|music|you)[.!? ]*$", re.I)
 
 
+# the narrator's goodbye: everything after it is outro music
+_CLOSING = re.compile(r"(thank(s| you)[\w ,]{0,20} for (watching|listening|joining)|see you (in the )?next|"
+                      r"until next time|gracias por (ver|escuchar|acompañarme)|nos vemos en el pr[oó]ximo|"
+                      r"hasta la pr[oó]xima)", re.I)
+
+
 def _ghost(s, prev_end, segs):
-    text = s["text"].strip(" .!?♪")
-    if not text or "♪" in s["text"] or _GHOST.match(text):
+    text = s["text"].strip(" .!?♪,")
+    toks = [t.strip(".,!?♪") for t in text.split()]
+    if not text or "♪" in s["text"] or _GHOST.match(text) or all(_GHOST.match(t) for t in toks if t):
         return True
     seg = [x for x in segs if x["end"] > s["start"] and x["start"] < s["end"]]     # whisper's own confidence
-    if seg and min(x.get("nsp", 0) for x in seg) > 0.6 or seg and max(x.get("lp", 0) for x in seg) < -1.2:
+    if seg and (min(x.get("nsp", 0) for x in seg) > 0.5 or max(x.get("lp", 0) for x in seg) < -0.6):
         return True
-    return s["start"] - prev_end > 8 and len(text.split()) < 6      # a lone short phrase after a long gap
+    return s["start"] - prev_end > 4 and len(toks) < 12            # a lone phrase after a long pause
 
 
 def plan_cuts(segments, total, cut_middle=150.0, min_len=15 * 60, log=print):
@@ -311,6 +318,12 @@ def plan_cuts(segments, total, cut_middle=150.0, min_len=15 * 60, log=print):
     sents = [s for s in sentences(segments) if s.get("text", "").strip()]
     if not sents:
         return [(0.0, total)]
+    tail_from = sents[-1]["end"] - max(90.0, 0.12 * sents[-1]["end"])
+    bye = [k for k, s in enumerate(sents) if s["start"] >= tail_from and _CLOSING.search(s["text"])]
+    if bye and bye[-1] < len(sents) - 1:              # "...thank you for watching." = the real end
+        log(f"  narration ends with '{sents[bye[-1]]['text'][-60:]}' at {sents[bye[-1]]['end'] / 60:.1f} min - "
+            f"{len(sents) - 1 - bye[-1]} later bits are outro music")
+        sents = sents[:bye[-1] + 1]
     while len(sents) > 1 and _ghost(sents[-1], sents[-2]["end"], segments):     # music at the end heard as words
         log(f"  ignoring '{sents[-1]['text'][:60]}' at {sents[-1]['start'] / 60:.1f} min (music, not narration)")
         sents.pop()

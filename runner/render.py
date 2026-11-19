@@ -605,6 +605,16 @@ def thumbnail_doc(work, words, person=None, bg_photo=None, out=None, log=print, 
             bg.alpha_composite(sp, (px_, 0))
             text_right = min(text_right, px_ + sp.width * 0.30)
         else:
+            try:                                       # photo with several people -> only the biggest one
+                import cv2
+                a = (np.asarray(sp.getchannel("A")) > 128).astype(np.uint8)
+                n, lab, stats, _ = cv2.connectedComponentsWithStats(a, 8)
+                if n > 2:
+                    big = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+                    keep = Image.fromarray(((lab == big) * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5))
+                    sp.putalpha(Image.fromarray(np.minimum(np.asarray(sp.getchannel("A")), np.asarray(keep))))
+            except Exception:                          # noqa: BLE001
+                pass
             box = sp.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
             sp = sp.crop(box) if box else sp
             face = _face(sp)
