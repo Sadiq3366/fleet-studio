@@ -89,7 +89,8 @@ def _groq(audio, duration, key, log):
                 ws.append(words[wi])
                 wi += 1
             _punctuate(ws, sg["text"])
-            out.append({"start": a, "end": b, "text": sg["text"].strip(), "words": ws})
+            out.append({"start": a, "end": b, "text": sg["text"].strip(), "words": ws,
+                        "nsp": sg.get("no_speech_prob", 0.0), "lp": sg.get("avg_logprob", 0.0)})
         if wi < len(words) and out:
             out[-1]["words"] += words[wi:]
     names = {"spanish": "es", "english": "en", "hindi": "hi", "urdu": "ur", "portuguese": "pt", "french": "fr",
@@ -132,7 +133,8 @@ def _local(audio, duration, log):
     out, last = [], 0
     for s in segs:
         words = [{"w": w.word.strip(), "s": w.start, "e": w.end} for w in (s.words or []) if w.word.strip()]
-        out.append({"start": s.start, "end": s.end, "text": s.text.strip(), "words": words})
+        out.append({"start": s.start, "end": s.end, "text": s.text.strip(), "words": words,
+                    "nsp": s.no_speech_prob, "lp": s.avg_logprob})
         if s.end - last > 300:
             last = s.end
             log(f"  {s.end / 60:.0f} min done")
@@ -284,3 +286,90 @@ def ff_path(p):
     """Path escaped for the ffmpeg subtitles= filter."""
     p = os.path.abspath(p).replace("\\", "/")
     return re.sub(r"([:'\[\],;])", r"\\\1", p)
+
+
+# ------------------------------------------------------------------ tighten the voice track
+# Whisper "hears" these in pure music; at the very end of a file they are almost never real narration.
+_GHOST = re.compile(r"^(thank(s| you)( so much)?( for (watching|listening))?|please subscribe|subscribe|bye|"
+                    r"gracias( por ver)?|suscr[ií]bete|obrigad[oa]|merci|danke|ok(ay)?|music|you)[.!? ]*$", re.I)
+
+
+def _ghost(s, prev_end, segs):
+    text = s["text"].strip(" .!?♪")
+    if not text or "♪" in s["text"] or _GHOST.match(text):
+        return True
+    seg = [x for x in segs if x["end"] > s["start"] and x["start"] < s["end"]]     # whisper's own confidence
+    if seg and min(x.get("nsp", 0) for x in seg) > 0.6 or seg and max(x.get("lp", 0) for x in seg) < -1.2:
+        return True
+    return s["start"] - prev_end > 8 and len(text.split()) < 6      # a lone short phrase after a long gap
+
+
+def plan_cuts(segments, total, cut_middle=150.0, min_len=15 * 60, log=print):
+    """Parts of the audio to KEEP: from the first word to the last real word (the music-only intro/outro of the
+    reference - often claimed by Content ID - goes), and, for long videos, one block of whole paragraphs of about
+    `cut_middle` seconds is removed from the middle. Cuts are only made in the pause between two sentences."""
+    sents = [s for s in sentences(segments) if s.get("text", "").strip()]
+    if not sents:
+        return [(0.0, total)]
+    while len(sents) > 1 and _ghost(sents[-1], sents[-2]["end"], segments):     # music at the end heard as words
+        log(f"  ignoring '{sents[-1]['text'][:60]}' at {sents[-1]['start'] / 60:.1f} min (music, not narration)")
+        sents.pop()
+    a = max(0.0, sents[0]["start"] - 0.4) if sents[0]["start"] > 2.5 else 0.0
+    b = min(total, sents[-1]["end"] + 1.2)
+    keep = [(a, b)]
+    if cut_middle and b - a >= min_len:
+        lo_t, hi_t = a + (b - a) * 0.25, a + (b - a) * 0.80
+        # pause after each sentence; long pause = end of a paragraph
+        bounds = [((s["end"] + n["start"]) / 2, n["start"] - s["end"]) for s, n in zip(sents, sents[1:])
+                  if lo_t <= s["end"] <= hi_t]
+        lo, hi = cut_middle * 0.75, cut_middle * 1.25
+        best = None
+        for i, (t1, g1) in enumerate(bounds):
+            for t2, g2 in bounds[i + 1:]:
+                d = t2 - t1
+                if d > hi:
+                    break
+                if d >= lo:
+                    sc = min(g1, 1.5) + min(g2, 1.5) - abs(d - cut_middle) / 120
+                    if best is None or sc > best[0]:
+                        best = (sc, t1, t2)
+        if best:
+            _, t1, t2 = best
+            keep = [(a, t1), (t2, b)]
+            log(f"  cutting {t2 - t1:.0f} s of whole paragraphs at {t1 / 60:.1f}-{t2 / 60:.1f} min")
+    gone = total - sum(y - x for x, y in keep)
+    if gone > 0.5:
+        log(f"  voice track: {total / 60:.1f} min -> {(total - gone) / 60:.1f} min "
+            f"(silence/music at start {a:.0f} s, after last word {total - b:.0f} s)")
+    return keep
+
+
+def shift_segments(segments, keep):
+    """Word/segment times re-mapped onto the shortened audio; words inside a removed part are dropped."""
+    def mapt(t):
+        off = 0.0
+        for x, y in keep:
+            if t < x:
+                return None
+            if t <= y:
+                return off + t - x
+            off += y - x
+        return None
+
+    out = []
+    for s in segments:
+        ws = []
+        for w in s.get("words") or []:
+            ns, ne = mapt(w["s"]), mapt(w["e"])
+            if ns is not None and ne is not None:
+                ws.append(dict(w, s=ns, e=ne))
+        if s.get("words"):
+            if not ws:
+                continue
+            text = s["text"] if len(ws) == len(s["words"]) else " ".join(w["w"] for w in ws)
+            out.append(dict(s, start=ws[0]["s"], end=ws[-1]["e"], text=text, words=ws))
+        else:
+            ns, ne = mapt(s["start"]), mapt(s["end"])
+            if ns is not None and ne is not None:
+                out.append(dict(s, start=ns, end=ne))
+    return out

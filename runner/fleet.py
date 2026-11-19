@@ -10,6 +10,7 @@ Secrets:     YT_TOKEN_<CHANNELID>  (Google refresh token JSON, saved by the webs
 """
 import argparse
 import datetime as dt
+import glob
 import json
 import os
 import shutil
@@ -18,6 +19,8 @@ import sys
 import time
 import traceback
 import urllib.request
+
+from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -215,18 +218,6 @@ def ytdlp(url, work, what, log):
     raise RuntimeError(f"reference {what} not downloaded")
 
 
-def ref_thumb(vid, work):
-    for q in ("maxresdefault", "sddefault", "hqdefault"):
-        try:
-            p = os.path.join(work, "ref_thumb.jpg")
-            urllib.request.urlretrieve(f"https://i.ytimg.com/vi/{vid}/{q}.jpg", p)
-            if os.path.getsize(p) > 2000:
-                return p
-        except OSError:
-            pass
-    return None
-
-
 def repo_file(rel):
     if not rel:
         return None
@@ -267,13 +258,19 @@ def produce(it, c, state):
         total = render.audio_length(audio, log)
         if total < 1:
             raise RuntimeError("the audio file is empty or broken")
-        ref_th = ref_thumb(it["video_id"], work) if it.get("video_id") else None
         avatar = repo_file(it.get("speaker")) or repo_file(c.get("avatar"))
         if avatar and (it.get("style") or c.get("style") or "viral") != "documentary":
             avatar = render.cutout(avatar, work, log)                 # transparent avatar, no background box
 
         log("== 1. speech to text")
         segments, lang = speech.transcribe(audio, total, log, SECRETS.get("GROQ_API_KEY"))
+        # voice only: no music-only intro/outro (Content ID claims), and long videos lose ~2.5 min of whole paragraphs
+        cut = it.get("cut_seconds", c.get("cut_seconds", 150))
+        keep = speech.plan_cuts(segments, total, cut_middle=float(cut or 0), log=log)
+        if keep != [(0.0, total)]:
+            audio = render.cut_audio(audio, keep, os.path.join(work, "voice_edit.m4a"), log)
+            segments = speech.shift_segments(segments, keep)
+            total = render.audio_length(audio, log)
         transcript = " ".join(s["text"] for s in segments)
 
         log("== 2. new title, description, tags, hashtags (AI)")
@@ -289,10 +286,11 @@ def produce(it, c, state):
         mode = it.get("background") or "pexels"
         px = broll.Pexels(SECRETS["PEXELS_API_KEY"], os.path.join(work, "clips"), log) if SECRETS.get("PEXELS_API_KEY") else None
         if mode == "pexels" and not px:
-            log("  no PEXELS_API_KEY secret -> background = reference thumbnail with motion (add the free key in Settings)")
+            log("  no PEXELS_API_KEY secret -> plain dark background (add the free key in Settings)")
         topic_q = meta.get("thumb_query") or "cinematic nature"
         scenes = speech.scenes_from(segments, total)
-        still = repo_file(it.get("thumb")) or ref_th or render._blank(work, 1920, 1080)
+        # never the reference channel's thumbnail in our video (it is their artwork -> copyright claims)
+        still = render._blank(work, 1920, 1080)
         if mode == "video" and it.get("ref_url"):
             try:
                 bgv = ytdlp(it["ref_url"], work, "video", log)
@@ -342,8 +340,20 @@ def produce(it, c, state):
             if style != "documentary":                 # reference style: avatar left, hook sentence right, name
                 thumb = render.thumbnail_v2(work, meta["thumbnail_text"], avatar, (c.get("speaker") or "").strip() or None,
                                             log=log, seed=it["id"])
-            else:
-                thumb = render.thumbnail(work, meta["thumbnail_text"], photo, ref_th, avatar, meta.get("highlight"), log=log)
+            else:                                      # documentary: 2-3 big words + the person + story background
+                words = (meta.get("thumb_words") or " ".join((info.get("subject") or meta["title"]).split()[-2:]))
+                bgp = px.photo(meta.get("thumb_scene") or info.get("topic_stock") or "dark dramatic sky") if px else None
+                if not bgp:                            # no stock photo -> the biggest archive photo of the film itself
+                    best = 0
+                    for f in glob.glob(os.path.join(work, "photos", "*.img")):
+                        try:
+                            with Image.open(f) as im:
+                                if im.width > im.height and im.width > best:
+                                    bgp, best = f, im.width
+                        except Exception:              # noqa: BLE001
+                            pass
+                log(f"  thumbnail words: {words}")
+                thumb = render.thumbnail_doc(work, words, photo if portrait else None, bgp, log=log, seed=it["id"])
 
         shorts = []
         if it.get("shorts"):

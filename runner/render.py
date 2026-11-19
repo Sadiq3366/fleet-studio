@@ -263,7 +263,7 @@ def thumbnail(work, text, bg_photo=None, ref_thumb=None, avatar=None, highlight=
 
 
 # ------------------------------------------------------------------ avatar cutout
-def cutout(path, work, log=print):
+def cutout(path, work, log=print, name="avatar_cutout.png"):
     """Avatar photo with a background (brick wall, room...) -> transparent PNG of just the person (rembg, free).
     Files that are already transparent are kept as they are."""
     if not path or not os.path.isfile(path):
@@ -272,7 +272,7 @@ def cutout(path, work, log=print):
     alpha = np.asarray(im.getchannel("A"))
     if (alpha < 200).mean() > 0.05:                 # already a real cutout
         return path
-    out = os.path.join(work, "avatar_cutout.png")
+    out = os.path.join(work, name)
     if os.path.isfile(out):
         return out
     try:
@@ -431,3 +431,228 @@ def audio_length(path, log=print):
         log(f"  NOTE: the audio file says {claimed / 60:.1f} min but really contains {real / 60:.1f} min - "
             f"using {real / 60:.1f} min (check your MP3 if this is not what you expected)")
     return real if real > 1 else claimed
+
+
+def cut_audio(audio, keep, out, log=print):
+    """Keeps only the given (start, end) parts of the voice track, joined with tiny fades (no clicks),
+    and a soft fade-out at the very end."""
+    n = len(keep)
+    parts = [f"[0:a]asplit={n}" + "".join(f"[s{i}]" for i in range(n)) if n > 1 else "[0:a]anull[s0]"]
+    for i, (a, b) in enumerate(keep):
+        d = b - a
+        f = f"[s{i}]atrim=start={a:.3f}:end={b:.3f},asetpts=PTS-STARTPTS"
+        if i > 0:
+            f += ",afade=t=in:st=0:d=0.04"
+        f += f",afade=t=out:st={max(0.0, d - (0.9 if i == n - 1 else 0.04)):.3f}:d={0.9 if i == n - 1 else 0.04}"
+        parts.append(f + f"[p{i}]")
+    graph = ";".join(parts) + ";" + "".join(f"[p{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1[a]"
+    _run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-i", audio, "-filter_complex", graph,
+          "-map", "[a]", "-vn", "-c:a", "aac", "-b:a", "192k", out], log)
+    return out
+
+
+# ------------------------------------------------------------------ documentary thumbnail (2-3 words + person)
+def _duotone(im, dark=(8, 6, 4), mid=(118, 74, 26), light=(255, 200, 118)):
+    """Any photo -> one warm cinematic colour mood (all thumbnails of the channel look like one series)."""
+    g = np.asarray(im.convert("L"), np.float32) / 255.0
+    g = np.clip((g - 0.04) / 0.92, 0, 1)
+    d, m, l = (np.array(c, np.float32) for c in (dark, mid, light))
+    lo = d + (m - d) * np.clip(g * 2, 0, 1)[..., None]
+    hi = m + (l - m) * np.clip(g * 2 - 1, 0, 1)[..., None]
+    out = np.where((g < 0.5)[..., None], lo, hi)
+    return Image.fromarray(out.clip(0, 255).astype(np.uint8))
+
+
+def _smoke(W, H, seed=0):
+    """No background photo: dark smoky clouds with a golden light from the right."""
+    rng = np.random.default_rng(seed)
+    acc = np.zeros((H, W), np.float32)
+    for k, wgt in ((6, 0.5), (14, 0.3), (40, 0.2)):
+        n = Image.fromarray((rng.random((k * H // W + 2, k + 2)) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC)
+        acc += np.asarray(n, np.float32) / 255 * wgt
+    x = np.linspace(0, 1, W)[None, :]
+    light = np.clip(x * 1.2 - 0.15, 0, 1) ** 1.5
+    return Image.fromarray((np.clip(acc * 0.55 + light * 0.45, 0, 1) * 255).astype(np.uint8))
+
+
+def _grunge(size, seed):
+    """Worn-print texture: alpha with small missing specks, like letters printed on old paper."""
+    rng = np.random.default_rng(seed)
+    w, h = size
+    fine = np.asarray(Image.fromarray((rng.random((max(1, h // 3), max(1, w // 3))) * 255).astype(np.uint8))
+                      .resize((w, h), Image.BILINEAR), np.float32)
+    big = np.asarray(Image.fromarray((rng.random((max(2, h // 40), max(2, w // 40))) * 255).astype(np.uint8))
+                     .resize((w, h), Image.BICUBIC), np.float32)
+    a = 255 - np.clip((fine * 0.55 + big * 0.45 - 165) * 2.0, 0, 110)
+    return Image.fromarray(a.astype(np.uint8))
+
+
+def _word_layer(text, fill, seed, gold=False):
+    """One line of text, big, tight, slightly widened (heavy documentary look), with texture."""
+    f = _font(300)
+    tmp = Image.new("L", (int(f.getlength(text)) + 80, 440), 0)
+    ImageDraw.Draw(tmp).text((40, 20), text, font=f, fill=255)
+    box = tmp.getbbox() or (0, 0, 10, 10)
+    mask = tmp.crop(box)
+    mask = mask.resize((int(mask.width * 1.16), mask.height), Image.LANCZOS)        # wider, heavier letters
+    if gold:                                       # vertical gold gradient
+        top, bot = np.array((255, 214, 112), np.float32), np.array((196, 124, 18), np.float32)
+        t = np.linspace(0, 1, mask.height)[:, None, None]
+        col = Image.fromarray(np.ascontiguousarray(np.broadcast_to(top + (bot - top) * t,
+                                                                   (mask.height, mask.width, 3))).astype(np.uint8))
+    else:
+        col = Image.new("RGB", mask.size, fill)
+    alpha = Image.fromarray((np.asarray(mask, np.float32) * np.asarray(_grunge(mask.size, seed), np.float32) / 255)
+                            .astype(np.uint8))
+    layer = col.convert("RGBA")
+    layer.putalpha(alpha)
+    return layer, mask
+
+
+def _face(im):
+    """Biggest face (x, y, w, h) in a picture, or None (OpenCV comes with rembg)."""
+    try:
+        import cv2
+        g = cv2.cvtColor(np.asarray(im.convert("RGB")), cv2.COLOR_RGB2GRAY)
+        det = cv2.CascadeClassifier(os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml"))
+        for n in (6, 3):
+            faces = det.detectMultiScale(g, 1.08, n, minSize=(max(24, im.width // 14),) * 2)
+            if len(faces):
+                return tuple(int(v) for v in max(faces, key=lambda f: f[2] * f[3]))
+    except Exception:                                  # noqa: BLE001
+        pass
+    if im.mode == "RGBA":                              # cut-out person: the head is the top part of the shape
+        a = np.asarray(im.getchannel("A")) > 128
+        rows = np.where(a.any(axis=1))[0]
+        if len(rows) > 20:
+            y0, h = rows[0], rows[-1] - rows[0]
+            spans = [np.where(a[y])[0] for y in range(y0 + int(h * 0.04), y0 + int(h * 0.10))]
+            spans = [s for s in spans if len(s)]
+            if spans:
+                hw = float(np.median([s[-1] - s[0] for s in spans])) * 1.15      # skull top -> head width
+                cx = float(np.median([(s[-1] + s[0]) / 2 for s in spans]))
+                if hw * 4.2 < h:                                                # small head = wide shot
+                    return int(cx - hw / 2), int(y0 + hw * 0.15), int(hw), int(hw * 1.2)
+    return None
+
+
+def thumbnail_doc(work, words, person=None, bg_photo=None, out=None, log=print, seed=""):
+    """Documentary thumbnail: 2-3 huge words on the left (white + gold, worn print), the person big on the right,
+    a dark warm cinematic background from the story, a thin gold line with a diamond under the words."""
+    from PIL import ImageEnhance, ImageOps
+    W, H = 1280, 720
+    out = out or os.path.join(work, "thumbnail.jpg")
+    sd = sum(map(ord, seed or words or "x"))
+
+    # 1. background: the story's scene in one warm colour mood, darker on the text side
+    if bg_photo and os.path.isfile(bg_photo):
+        im = Image.open(bg_photo).convert("RGB")
+        sc = max(W / im.width, H / im.height)
+        im = im.resize((round(im.width * sc), round(im.height * sc)), Image.LANCZOS)
+        im = im.crop(((im.width - W) // 2, (im.height - H) // 2, (im.width - W) // 2 + W, (im.height - H) // 2 + H))
+        im = ImageOps.autocontrast(im.filter(ImageFilter.GaussianBlur(1.6)), cutoff=1)
+    else:
+        im = _smoke(W, H, sd)
+    bg = _duotone(im)
+    x = np.linspace(0, 1, W)[None, :, None]
+    y = np.linspace(-1, 1, H)[:, None, None]
+    shade = (0.30 + 0.70 * np.clip((x - 0.05) / 0.6, 0, 1)) * (1 - 0.35 * y ** 2)   # dark text side + vignette
+    bg = Image.fromarray((np.asarray(bg, np.float32) * shade).clip(0, 255).astype(np.uint8))
+    glow = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(glow).ellipse([W * 0.55, -H * 0.3, W * 1.25, H * 0.7], fill=85)
+    bg.paste(Image.new("RGB", (W, H), (255, 170, 60)), (0, 0), glow.filter(ImageFilter.GaussianBlur(140)))
+    bg = bg.convert("RGBA")
+
+    # 2. the person, cut out, big on the right
+    text_right = W * 0.60
+    if person and os.path.isfile(person):
+        sp = Image.open(cutout(person, work, log, name="person_cutout.png")).convert("RGBA")
+        if (np.asarray(sp.getchannel("A")) < 128).mean() < 0.04:    # no cutout possible -> soft-faded photo
+            sp = Image.open(person).convert("RGBA")
+            sp = sp.resize((max(1, round(sp.width * H / sp.height)), H), Image.LANCZOS)
+            if sp.width > W * 0.55:
+                lft = (sp.width - int(W * 0.55)) // 2
+                sp = sp.crop((lft, 0, lft + int(W * 0.55), H))
+            fade = np.clip(np.linspace(0, 1.6, sp.width), 0, 1)[None, :] * 255
+            sp.putalpha(Image.fromarray(np.ascontiguousarray(np.broadcast_to(fade, (sp.height, sp.width))).astype(np.uint8)))
+            px_ = W - sp.width
+            bg.alpha_composite(sp, (px_, 0))
+            text_right = min(text_right, px_ + sp.width * 0.30)
+        else:
+            box = sp.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
+            sp = sp.crop(box) if box else sp
+            face = _face(sp)
+            if face:                                   # big head and shoulders, like a magazine cover
+                fx, fy, fw, fh = face
+                cx = fx + fw / 2
+                l, t = max(0, int(cx - fw * 1.9)), max(0, int(fy - fh * 0.75))
+                sp = sp.crop((l, t, min(sp.width, int(cx + fw * 1.9)), min(sp.height, int(fy + fh * 2.6))))
+            elif sp.height > sp.width * 1.3:           # no face found: keep the top part (head and shoulders)
+                sp = sp.crop((0, 0, sp.width, int(sp.width * 1.2)))
+            h = int(H * 1.04)
+            sp = sp.resize((max(1, round(sp.width * h / sp.height)), h), Image.LANCZOS)
+            if sp.width > W * 0.58:
+                sp = sp.resize((int(W * 0.58), max(1, round(sp.height * W * 0.58 / sp.width))), Image.LANCZOS)
+            rgb = ImageEnhance.Contrast(sp.convert("RGB")).enhance(1.12)
+            if np.asarray(rgb, np.float32).std(axis=2).mean() < 6:             # old black-and-white photo -> warm tone
+                rgb = _duotone(rgb, (14, 10, 6), (140, 104, 70), (255, 240, 214))
+            rgb = ImageEnhance.Sharpness(rgb).enhance(1.3)
+            sp = Image.merge("RGBA", (*rgb.split(), sp.getchannel("A")))
+            px_, py_ = W - sp.width + int(sp.width * 0.04), H - sp.height
+            pad = 48                                   # glow drawn on a bigger canvas -> never cut off in a box
+            rim = Image.new("L", (sp.width + 2 * pad, sp.height + 2 * pad), 0)
+            rim.paste(sp.getchannel("A"), (pad, pad))
+            rim = rim.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(14)).point(lambda v: int(v * 0.75))
+            glow_l = Image.new("RGBA", rim.size, (255, 178, 70, 0))
+            glow_l.putalpha(rim)
+            gl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+            gl.paste(glow_l, (px_ - pad, py_ - pad))
+            bg.alpha_composite(gl)
+            bg.alpha_composite(sp, (px_, py_))
+            text_right = min(text_right, px_ + sp.width * 0.12)
+
+    # 3. the 2-3 words: white line + gold last line, worn texture, deep shadow
+    ws = re.sub(r"[^\w\s'’-]", " ", words or "").upper().split()[:3]
+    if ws:
+        if len(ws) == 3:                               # keep the two shorter words together
+            lines = ([" ".join(ws[:2]), ws[2]] if len(ws[0]) + len(ws[1]) <= len(ws[1]) + len(ws[2])
+                     else [ws[0], " ".join(ws[1:])])
+        else:
+            lines = ws
+        left = 58
+        max_w, max_h = text_right - left, H * (0.36 if len(lines) == 1 else 0.27)
+        layers = []
+        for i, ln in enumerate(lines):
+            lay, m = _word_layer(ln, (236, 233, 226), sd + i, gold=(i == len(lines) - 1))
+            s = min(max_w / lay.width, max_h / lay.height)
+            size = (max(1, int(lay.width * s)), max(1, int(lay.height * s)))
+            layers.append((lay.resize(size, Image.LANCZOS), m.resize(size, Image.LANCZOS)))
+        gap = int(H * 0.035)
+        block_h = sum(lay.height for lay, _ in layers) + gap * (len(layers) - 1) + 50
+        y = int((H - block_h) / 2 + H * 0.02)
+        block_w = max(lay.width for lay, _ in layers)
+        for lay, m in layers:
+            shm = Image.new("L", (W, H), 0)
+            shm.paste(m, (left + 8, y + 10))
+            sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+            sh.putalpha(shm.filter(ImageFilter.GaussianBlur(12)).point(lambda v: int(v * 0.85)))
+            bg.alpha_composite(sh)
+            bg.alpha_composite(lay, (left, y))
+            y += lay.height + gap
+        d = ImageDraw.Draw(bg)                          # thin gold line with a diamond in the middle
+        ly, cx, gold = y + 18, left + block_w / 2, (226, 168, 56, 255)
+        d.line([(left, ly), (cx - 26, ly)], fill=gold, width=3)
+        d.line([(cx + 26, ly), (left + block_w, ly)], fill=gold, width=3)
+        d.polygon([(cx, ly - 14), (cx + 14, ly), (cx, ly + 14), (cx - 14, ly)], outline=gold, width=3)
+        for ex in (left, left + block_w):
+            d.ellipse([ex - 4, ly - 4, ex + 4, ly + 4], fill=gold)
+
+    # 4. film grain
+    rng = np.random.default_rng(sd)
+    arr = np.asarray(bg.convert("RGB"), np.float32) + rng.normal(0, 5, (H, W, 1))
+    img = Image.fromarray(arr.clip(0, 255).astype(np.uint8))
+    img.save(out, "JPEG", quality=93)
+    if os.path.getsize(out) > 1_900_000:
+        img.save(out, "JPEG", quality=82)
+    log("documentary thumbnail made")
+    return out

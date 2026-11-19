@@ -119,7 +119,12 @@ Return JSON with keys:
 "tags": 20 search tags (mix broad + specific, total under 450 characters),
 "hashtags": 4 hashtags with #,
 "short_titles": 2 viral titles for vertical Shorts made from this video, max 70 characters,
-"thumb_query": 2-4 ENGLISH words for a stock photo matching the thumbnail emotion."""
+"thumb_query": 2-4 ENGLISH words for a stock photo matching the thumbnail emotion,
+"thumb_words": 2 or 3 BIG words for a documentary-style thumbnail, same language: a dramatic nickname or label for
+   the main person/story, e.g. "GRAVE DANCER", "HITLER'S BANKER", "THE LAST TSAR", "BLOOD MONEY". Not a sentence,
+   no names of other YouTube channels, no symbols,
+"thumb_scene": 4-7 ENGLISH words for a dark, dramatic background photo WITHOUT people that sets the place, era and
+   mood of the story, e.g. "stormy sky over ruined city", "old bank vault gold bars", "burning city at night"."""
     j = llm_json(prompt, secrets, log) or {}
     title = (j.get("title") or ref.get("title") or transcript[:60] or "Video").strip()[:100]
     rw = set(re.findall(r"\w+", (ref.get("title") or "").lower()))
@@ -136,6 +141,8 @@ Return JSON with keys:
         "short_titles": (j.get("short_titles") or [])[:2],
         "alt_titles": [t for t in (j.get("alt_titles") or []) if isinstance(t, str)][:3],
         "thumb_query": " ".join(j["thumb_query"][:1]) if isinstance(j.get("thumb_query"), list) else (j.get("thumb_query") or ""),
+        "thumb_words": " ".join(str(j.get("thumb_words") or "").split()[:3]),
+        "thumb_scene": str(j.get("thumb_scene") or "").strip(),
     }
     while sum(len(t) + 3 for t in meta["tags"]) > 480:
         meta["tags"].pop()
