@@ -1,10 +1,11 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-11-20T07:27:00+00:00",
+   "last_slot": "2026-11-23T07:27:00+00:00",
    "slots": [
     "2026-11-18T07:27:00+00:00",
-    "2026-11-20T07:27:00+00:00"
+    "2026-11-20T07:27:00+00:00",
+    "2026-11-23T07:27:00+00:00"
    ]
   },
   "50ab3e4e36ea": {
@@ -354,71 +355,71 @@
     "  uploaded https://youtu.be/-_xLecXEpRI (public at 2026-11-29 05:17 UTC)"
    ]
   },
-  "29e7cc514737": {
+  "597169d8b049": {
    "status": "done",
-   "run": "44444159896",
-   "started": "2026-11-19T02:26:24+00:00",
+   "run": "44448844490",
+   "started": "2026-11-19T03:30:24+00:00",
    "error": null,
    "youtube": [
     {
      "kind": "video",
-     "id": "IQC2wI_NPiY",
-     "publish": "2026-11-30T13:17:00+00:00"
+     "id": "axVG5Zm7v9U",
+     "publish": "2026-11-23T07:27:00+00:00"
     },
     {
      "kind": "short 1",
-     "id": "76p2fxZ4H24",
-     "publish": "2026-12-01T21:17:00+00:00"
+     "id": "UJ5E_p1jyA8",
+     "publish": "2026-11-24T07:27:00+00:00"
     },
     {
      "kind": "short 2",
-     "id": "AMCs6evWVss",
-     "publish": "2026-12-03T05:17:00+00:00"
+     "id": "HL91hsFT5EE",
+     "publish": "2026-11-25T07:27:00+00:00"
     }
    ],
-   "finished": "2026-11-19T03:27:53+00:00",
-   "title": "He Wasn't A Nazi Yet He Paid For Their Entire Army",
+   "finished": "2026-11-19T04:29:40+00:00",
+   "title": "CUANDO DEJAS DE HABLAR, TODO CAMBIA | WALTER RISO",
    "log": [
-    "  44 archive files could not be downloaded - the next best real photo was used instead",
-    "  average match score -0.714; 142 photos, 102 film clips",
-    "== 4. video 16:9 with subtitles + music (39.9 min)",
-    "  main: 280 scenes, 39.9 min, 4 at a time (superfast)",
-    "  main: 40/280 scenes ready",
-    "  main: 80/280 scenes ready",
-    "  main: 120/280 scenes ready",
-    "  main: 160/280 scenes ready",
-    "  main: 200/280 scenes ready",
-    "  main: 240/280 scenes ready",
-    "  main: 280/280 scenes ready",
+    "  clips 250/317 (pexels calls 180, match score 0.298)",
+    "  clips 275/317 (pexels calls 180, match score 0.276)",
+    "  clips 300/317 (pexels calls 180, match score 0.251)",
+    "  average match score 0.352",
+    "== 4. video 16:9 with subtitles + avatar (45.7 min)",
+    "  main: 317 scenes, 45.7 min, 4 at a time (superfast)",
+    "  main: 40/317 scenes ready",
+    "  main: 80/317 scenes ready",
+    "  main: 120/317 scenes ready",
+    "  main: 160/317 scenes ready",
+    "  main: 200/317 scenes ready",
+    "  main: 240/317 scenes ready",
+    "  main: 280/317 scenes ready",
     "== 5. thumbnail",
-    "  thumbnail words: HITLERS BANKER",
-    "  removing the avatar background (rembg)...",
-    "documentary thumbnail made",
+    "thumbnail made",
     "== 6. vertical Shorts",
-    "  short 1: vertical HD videos for 5 sentences",
+    "  short 1: vertical HD videos for 7 sentences",
     "  loading the visual matching model (CLIP)...",
-    "  short1: 5 scenes, 0.7 min, 4 at a time (veryfast)",
-    "  short 2: vertical HD videos for 9 sentences",
+    "  short1: 7 scenes, 1.0 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 7 sentences",
     "  loading the visual matching model (CLIP)...",
-    "  short2: 9 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short2: 7 scenes, 0.9 min, 4 at a time (veryfast)",
     "== 7. uploading to YouTube",
-    "  uploading video.mp4 (991 MB)",
+    "  uploading video.mp4 (1434 MB)",
     "  upload 1%",
     "  upload 11%",
-    "  upload 22%",
-    "  upload 32%",
+    "  upload 21%",
+    "  upload 31%",
     "  upload 42%",
     "  upload 52%",
     "  upload 62%",
     "  upload 72%",
-    "  upload 82%",
+    "  upload 83%",
     "  upload 93%",
-    "  uploaded https://youtu.be/IQC2wI_NPiY (public at 2026-11-30 13:17 UTC)",
+    "  uploaded https://youtu.be/axVG5Zm7v9U (public at 2026-11-23 07:27 UTC)",
     "  winning thumbnail attached",
-    "  uploading short_1.mp4 (2 MB)",
-    "  uploaded https://youtu.be/76p2fxZ4H24 (public at 2026-12-01 21:17 UTC)",
+    "  uploading short_1.mp4 (3 MB)",
+    "  uploaded https://youtu.be/UJ5E_p1jyA8 (public at 2026-11-24 07:27 UTC)",
     "  uploading short_2.mp4 (3 MB)",
-    "  uploaded https://youtu.be/AMCs6evWVss (public at 2026-12-03 05:17 UTC)"
+    "  uploaded https://youtu.be/HL91hsFT5EE (public at 2026-11-25 07:27 UTC)"
    ]
   }
  }
