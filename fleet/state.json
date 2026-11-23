@@ -1,7 +1,7 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-12-05T07:27:00+00:00",
+   "last_slot": "2026-12-08T07:27:00+00:00",
    "slots": [
     "2026-11-18T07:27:00+00:00",
     "2026-11-20T07:27:00+00:00",
@@ -9,7 +9,8 @@
     "2026-11-26T07:27:00+00:00",
     "2026-11-29T07:27:00+00:00",
     "2026-12-02T07:27:00+00:00",
-    "2026-12-05T07:27:00+00:00"
+    "2026-12-05T07:27:00+00:00",
+    "2026-12-08T07:27:00+00:00"
    ]
   },
   "50ab3e4e36ea": {
@@ -1093,6 +1094,73 @@
     "  uploaded https://youtu.be/UDyFBEvfQ_Y (public at 2026-11-24 10:23 UTC)",
     "  uploading short_2.mp4 (15 MB)",
     "  uploaded https://youtu.be/VuFeuFK2yzs (public at 2026-11-25 10:23 UTC)"
+   ]
+  },
+  "8a6cde475c8a": {
+   "status": "done",
+   "run": "45152661774",
+   "started": "2026-11-23T10:16:30+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "Adp-6HFLlJo",
+     "publish": "2026-12-08T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "ocEPonZyekM",
+     "publish": "2026-12-09T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "jFpo_M6QsU0",
+     "publish": "2026-12-10T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-23T10:48:41+00:00",
+   "title": "¿QUÉ SIENTE UN HOMBRE CUANDO TE PIERDE Y YA NO PUEDE RECUPERARTE? | WALTER RISO",
+   "log": [
+    "  clips 175/231 (pexels calls 146, match score 0.406)",
+    "  clips 200/231 (pexels calls 166, match score 0.402)",
+    "  clips 225/231 (pexels calls 180, match score 0.389)",
+    "  average match score 0.395",
+    "== 4. video 16:9 with subtitles + avatar (28.2 min)",
+    "  main: 231 scenes, 28.2 min, 4 at a time (superfast)",
+    "  main: 40/231 scenes ready",
+    "  main: 80/231 scenes ready",
+    "  main: 120/231 scenes ready",
+    "  main: 160/231 scenes ready",
+    "  main: 200/231 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 7 scenes, 0.7 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (867 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 21%",
+    "  upload 32%",
+    "  upload 42%",
+    "  upload 52%",
+    "  upload 63%",
+    "  upload 73%",
+    "  upload 83%",
+    "  upload 94%",
+    "  uploaded https://youtu.be/Adp-6HFLlJo (public at 2026-12-08 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 86%",
+    "  uploaded https://youtu.be/ocEPonZyekM (public at 2026-12-09 07:27 UTC)",
+    "  uploading short_2.mp4 (24 MB)",
+    "  upload 68%",
+    "  uploaded https://youtu.be/jFpo_M6QsU0 (public at 2026-12-10 07:27 UTC)"
    ]
   }
  }
