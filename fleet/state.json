@@ -13,14 +13,15 @@
    ]
   },
   "50ab3e4e36ea": {
-   "last_slot": "2026-12-08T13:17:00+00:00",
+   "last_slot": "2026-12-12T13:17:00+00:00",
    "slots": [
     "2026-11-18T13:17:00+00:00",
     "2026-11-22T13:17:00+00:00",
     "2026-11-26T13:17:00+00:00",
     "2026-11-30T13:17:00+00:00",
     "2026-12-04T13:17:00+00:00",
-    "2026-12-08T13:17:00+00:00"
+    "2026-12-08T13:17:00+00:00",
+    "2026-12-12T13:17:00+00:00"
    ]
   }
  },
@@ -962,6 +963,63 @@
     "  uploading short_2.mp4 (23 MB)",
     "  upload 73%",
     "  uploaded https://youtu.be/IdySX8e1OOk (public at 2026-12-07 07:27 UTC)"
+   ]
+  },
+  "565a03500220": {
+   "status": "done",
+   "run": "45136684270",
+   "started": "2026-11-23T08:13:26+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "qq00sk-_7YE",
+     "publish": "2026-12-12T13:17:00+00:00"
+    }
+   ],
+   "finished": "2026-11-23T09:08:13+00:00",
+   "title": "Fred Trump Jr. — The Forgotten Son of the Trump Dynasty | Full Documentary",
+   "log": [
+    "  scenes 25/319, match score -0.302",
+    "  Fred Trump III: 1 real HD landscape photos, 0 real film clips found",
+    "  Mary L. Trump: 1 real HD landscape photos, 0 real film clips found",
+    "  Gwenda Blair: 0 real HD landscape photos, 0 real film clips found",
+    "  scenes 50/319, match score -0.719",
+    "  scenes 75/319, match score -3.195",
+    "  scenes 100/319, match score -4.018",
+    "  scenes 125/319, match score -6.238",
+    "  scenes 150/319, match score -7.823",
+    "  scenes 175/319, match score -6.418",
+    "  scenes 275/319, match score -2.543",
+    "  11 archive files could not be downloaded - the next best real photo was used instead",
+    "  average match score -3.811; 47 photos, 159 film clips",
+    "  113 scenes had no picture - they show the picture of the scene next to them",
+    "== 4. video 16:9 with subtitles + music (45.4 min)",
+    "  main: 319 scenes, 45.4 min, 4 at a time (superfast)",
+    "  main: 40/319 scenes ready",
+    "  main: 80/319 scenes ready",
+    "  main: 120/319 scenes ready",
+    "  main: 160/319 scenes ready",
+    "  main: 200/319 scenes ready",
+    "  main: 240/319 scenes ready",
+    "  main: 280/319 scenes ready",
+    "== 5. thumbnail",
+    "  thumbnail words: THE FORGOTTEN HEIR",
+    "documentary thumbnail made",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1293 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 22%",
+    "  upload 32%",
+    "  upload 42%",
+    "  upload 53%",
+    "  upload 63%",
+    "  upload 73%",
+    "  upload 83%",
+    "  upload 93%",
+    "  uploaded https://youtu.be/qq00sk-_7YE (public at 2026-12-12 13:17 UTC)",
+    "  winning thumbnail attached"
    ]
   }
  }
