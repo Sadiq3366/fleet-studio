@@ -23,6 +23,12 @@
     "2026-12-08T13:17:00+00:00",
     "2026-12-12T13:17:00+00:00"
    ]
+  },
+  "31a85b08eecd": {
+   "last_slot": "2026-11-23T10:23:00+00:00",
+   "slots": [
+    "2026-11-23T10:23:00+00:00"
+   ]
   }
  },
  "items": {
@@ -1020,6 +1026,73 @@
     "  upload 93%",
     "  uploaded https://youtu.be/qq00sk-_7YE (public at 2026-12-12 13:17 UTC)",
     "  winning thumbnail attached"
+   ]
+  },
+  "d0befaa18db1": {
+   "status": "done",
+   "run": "45139915747",
+   "started": "2026-11-23T09:17:08+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "mOgpPoNA_uA",
+     "publish": "2026-11-23T10:23:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "UDyFBEvfQ_Y",
+     "publish": "2026-11-24T10:23:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "VuFeuFK2yzs",
+     "publish": "2026-11-25T10:23:00+00:00"
+    }
+   ],
+   "finished": "2026-11-23T09:54:21+00:00",
+   "title": "CUANDO UN HOMBRE TE PIDE ESTO, SU VERDADERA INTENCIÓN ES OTRA  | Nilda Chiaraviglio",
+   "log": [
+    "  clips 250/298 (pexels calls 180, match score 0.321)",
+    "  clips 275/298 (pexels calls 180, match score 0.294)",
+    "  average match score 0.371",
+    "== 4. video 16:9 with subtitles + avatar (39.2 min)",
+    "  main: 298 scenes, 39.2 min, 4 at a time (superfast)",
+    "  main: 40/298 scenes ready",
+    "  main: 80/298 scenes ready",
+    "  main: 120/298 scenes ready",
+    "  main: 160/298 scenes ready",
+    "  main: 200/298 scenes ready",
+    "  main: 240/298 scenes ready",
+    "  main: 280/298 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1152 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 21%",
+    "  upload 32%",
+    "  upload 42%",
+    "  upload 52%",
+    "  upload 62%",
+    "  upload 72%",
+    "  upload 83%",
+    "  upload 93%",
+    "  uploaded https://youtu.be/mOgpPoNA_uA (public at 2026-11-23 10:23 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 87%",
+    "  uploaded https://youtu.be/UDyFBEvfQ_Y (public at 2026-11-24 10:23 UTC)",
+    "  uploading short_2.mp4 (15 MB)",
+    "  uploaded https://youtu.be/VuFeuFK2yzs (public at 2026-11-25 10:23 UTC)"
    ]
   }
  }
