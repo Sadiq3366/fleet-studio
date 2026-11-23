@@ -9,5 +9,16 @@
   },
   "by": "sadiq",
   "created": "2026-11-18T04:53:46.525Z"
+ },
+ "msadiq": {
+  "role": "owner",
+  "sealed": {
+   "salt": "WMHQ/HjrAALjqxIoUVh2pA==",
+   "iv": "7Y9R4547WreHCSL+",
+   "ct": "ymEKXpvhuMgSnZcBGcM7skn9lVJrEF+09E/EzKieR+nK0a+10/36PqFTzymP+Tp85Qpy9Orza+wjfib+LgMYER+eJgZ+riyEYRRxjNEDhuxL9zE5k8ujskG7C2e0h4IvKD+lEPdhmzJegI/zTL9hB16KlRaP3l590d0GP9l8ruBO2THClBSFyQEg8GdJYCUjro5FQg5ZA1677SxEBhGOtmGQyjNhfjHor5A9KeZVYzUrKkb3hG/r0qRVDzMy58PWjB6DmMFDA10+CDPcJFPHJJt76kMVN3RwG71CQmAHU1ttJLJkz+00f9r5F4DvZ2hi0+JPAm5Et0bJphFmK0pj2NY344390fCyMRzi3aQgq7xDkRbBRWqVwqyxGUkY+sm6k/G1c/jbpiUsxAHgHuE6DoTrhcZzGA==",
+   "it": 600000
+  },
+  "by": "sadiq",
+  "created": "2026-11-23T08:26:05.739Z"
  }
 }
