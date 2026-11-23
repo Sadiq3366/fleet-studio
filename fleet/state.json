@@ -896,6 +896,73 @@
     "  uploading short_2.mp4 (13 MB)",
     "  uploaded https://youtu.be/v5DCurJvkPA (public at 2026-12-07 07:27 UTC)"
    ]
+  },
+  "da9b8674f169": {
+   "status": "done",
+   "run": "45124433196",
+   "started": "2026-11-23T07:00:46+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "x7loBDjB58k",
+     "publish": "2026-12-05T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "GHWR6Ot1PV8",
+     "publish": "2026-12-06T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "IdySX8e1OOk",
+     "publish": "2026-12-07T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-23T07:26:55+00:00",
+   "title": "¿NO LE IMPORTÓ PERDERTE? DESAPARECE Y DEJA QUE EL SILENCIO HABLE | WALTER RISO",
+   "log": [
+    "  pexels 'unexpected appearance arrival': HTTP Error 429: Too Many Requests",
+    "  pexels 'unexpected appearance arrival': HTTP Error 429: Too Many Requests",
+    "  pexels 'shadowy figure walking': HTTP Error 429: Too Many Requests",
+    "  pexels 'uncertain presence shadow': HTTP Error 429: Too Many Requests",
+    "  pexels 'uncertain presence shadow': HTTP Error 429: Too Many Requests",
+    "  average match score 0.386",
+    "== 4. video 16:9 with subtitles + avatar (16.7 min)",
+    "  main: 141 scenes, 16.7 min, 4 at a time (superfast)",
+    "  main: 40/141 scenes ready",
+    "  main: 80/141 scenes ready",
+    "  main: 120/141 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  average match score 0.369",
+    "  short1: 7 scenes, 0.8 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  average match score 0.343",
+    "  short2: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (516 MB)",
+    "  upload 3%",
+    "  upload 13%",
+    "  upload 26%",
+    "  upload 39%",
+    "  upload 52%",
+    "  upload 65%",
+    "  upload 78%",
+    "  upload 91%",
+    "  uploaded https://youtu.be/x7loBDjB58k (public at 2026-12-05 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (17 MB)",
+    "  upload 96%",
+    "  uploaded https://youtu.be/GHWR6Ot1PV8 (public at 2026-12-06 07:27 UTC)",
+    "  uploading short_2.mp4 (23 MB)",
+    "  upload 73%",
+    "  uploaded https://youtu.be/IdySX8e1OOk (public at 2026-12-07 07:27 UTC)"
+   ]
   }
  }
 }
