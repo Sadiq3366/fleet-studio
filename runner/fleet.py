@@ -16,6 +16,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 import urllib.request
@@ -222,7 +223,17 @@ def repo_file(rel):
     if not rel:
         return None
     p = os.path.join(ROOT, rel)
-    return p if os.path.isfile(p) else None
+    if os.path.isfile(p):
+        return p
+    parts = sorted(glob.glob(glob.escape(p) + ".part[0-9][0-9][0-9]"))
+    if not parts:                                        # big uploads arrive in parts: join them outside the repo
+        return None
+    joined = os.path.join(tempfile.mkdtemp(prefix="joined_"), os.path.basename(p))
+    with open(joined, "wb") as out:
+        for part in parts:
+            with open(part, "rb") as f:
+                shutil.copyfileobj(f, out)
+    return joined
 
 
 # ------------------------------------------------------------------ one video
@@ -414,9 +425,12 @@ def produce(it, c, state):
         summary(f"### ✅ {meta['title']}\n" + "".join(f"- {y['kind']}: https://youtu.be/{y['id']} "
                                                        f"{'(public ' + y['publish'] + ')' if y['publish'] else '(public now)'}\n" for y in yt_ids))
         for k in ("audio", "thumb", "speaker"):          # inbox files are not needed any more
-            p = repo_file(it.get(k))
-            if p and "/inbox/" in p.replace("\\", "/"):
-                os.remove(p)
+            rel = it.get(k)
+            if rel and rel.replace("\\", "/").startswith("inbox/"):
+                base = os.path.join(ROOT, rel)
+                for q in [base, *glob.glob(glob.escape(base) + ".part[0-9][0-9][0-9]")]:
+                    if os.path.isfile(q):
+                        os.remove(q)
         return True
     except Exception as e:                               # noqa: BLE001
         msg = str(e)

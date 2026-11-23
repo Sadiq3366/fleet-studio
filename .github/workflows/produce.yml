@@ -15,6 +15,7 @@ on:
     - cron: "17 */2 * * *"          # autopilot every 2 hours
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: fleet-runner               # one run at a time -> no clashes in fleet/state.json
   cancel-in-progress: false
@@ -63,4 +64,4 @@ jobs:
             out/**/thumbnail.*
             out/**/clip_matches.txt
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 1          # GitHub minimum; cleanup.yml deletes it after 1 hour

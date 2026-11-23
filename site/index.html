@@ -127,7 +127,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:9px 8px;border-bottom:1p
 </section>
 
 <section id="t-runs" class="hide">
-  <div class="card"><h2>Recent cloud production runs</h2><div class="mute">Videos and thumbnails of every run are kept 7 days (open a run, then "Artifacts").</div><div id="rList" class="mute">Loading...</div></div>
+  <div class="card"><h2>Recent cloud production runs</h2><div class="mute">Videos and thumbnails of every run are kept only 1 hour (open a run, then "Artifacts"), then deleted automatically to save space.</div><div id="rList" class="mute">Loading...</div></div>
   <div class="card"><h3>Published / scheduled</h3><div id="pubList" class="mute">Loading...</div></div>
 </section>
 
@@ -251,9 +251,15 @@ async function putRaw(path,b64content,message,sha){return gh(`${R()}/contents/${
 async function mutate(path,def,fn,message){for(let i=0;i<4;i++){const {data,sha}=await getJSON(path,def);const out=fn(data)??data;
   try{await putRaw(path,u8b64(JSON.stringify(out,null,1)),message,sha);return out}catch(e){if(e.status!==409&&e.status!==422)throw e;await new Promise(r=>setTimeout(r,700))}}throw new Error("Could not save - try again")}
 function fileB64(f){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(f)})}
-async function putFile(path,file,message){if(file.size>95*1024*1024)throw new Error("File too big (max 95 MB).");
-  let sha=null;try{sha=(await gh(`${R()}/contents/${path}?ref=${BRANCH}`)).sha}catch(e){}
-  await putRaw(path,await fileB64(file),message,sha);return path}
+async function putFile(path,file,message){
+  const CH=18*1024*1024;   /* GitHub refuses big single uploads -> long audio is sent in 18 MB parts, the cloud joins them */
+  const one=async(p,blob)=>{let sha=null;try{sha=(await gh(`${R()}/contents/${p}?ref=${BRANCH}`)).sha}catch(e){}
+    await putRaw(p,await fileB64(blob),message,sha)};
+  if(file.size<=CH){await one(path,file);return path}
+  const n=Math.ceil(file.size/CH);
+  for(let i=0;i<n;i++){if(window.$)try{const m=$("#pMsg");if(m)m.textContent=`Uploading part ${i+1}/${n} (${(file.size/1048576).toFixed(0)} MB)...`}catch(e){}
+    await one(`${path}.part${String(i+1).padStart(3,"0")}`,file.slice(i*CH,(i+1)*CH))}
+  return path}
 async function dispatch(inputs){await gh(`${R()}/actions/workflows/${WF}/dispatches`,{method:"POST",body:JSON.stringify({ref:BRANCH,inputs})})}
 let sodiumP=null;
 function sodium(){sodiumP=sodiumP||import("https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/+esm").then(async m=>{const s=m.default||m;await s.ready;return s});return sodiumP}

@@ -1,0 +1,25 @@
+name: Cleanup old videos
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Cloud Production"]
+    types: [completed]
+permissions:
+  actions: write
+  contents: read
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete artifacts (videos, shorts, thumbnails) older than 1 hour
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cutoff=$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh api --paginate "repos/${{ github.repository }}/actions/artifacts?per_page=100"             --jq ".artifacts[] | select(.created_at < \"$cutoff\") | .id" |
+          while read -r id; do
+            echo "deleting artifact $id"
+            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
+          done
