@@ -26,9 +26,10 @@
    ]
   },
   "31a85b08eecd": {
-   "last_slot": "2026-11-23T10:23:00+00:00",
+   "last_slot": "2026-11-26T10:23:00+00:00",
    "slots": [
-    "2026-11-23T10:23:00+00:00"
+    "2026-11-23T10:23:00+00:00",
+    "2026-11-26T10:23:00+00:00"
    ]
   }
  },
@@ -1161,6 +1162,73 @@
     "  uploading short_2.mp4 (24 MB)",
     "  upload 68%",
     "  uploaded https://youtu.be/jFpo_M6QsU0 (public at 2026-12-10 07:27 UTC)"
+   ]
+  },
+  "3d2f0e2b0dcf": {
+   "status": "done",
+   "run": "45156849151",
+   "started": "2026-11-23T10:50:47+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "7q2g39j8FsE",
+     "publish": "2026-11-26T10:23:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "IB60JofCac4",
+     "publish": "2026-11-27T10:23:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "eUV_JwgfFaw",
+     "publish": "2026-11-28T10:23:00+00:00"
+    }
+   ],
+   "finished": "2026-11-23T11:26:56+00:00",
+   "title": "3 CLAVES PSICOLÓGICAS PARA QUE ÉL NO DEJE DE PENSAR EN TI | NILDA CHIARAVIGLIO",
+   "log": [
+    "  pexels 'man seeks woman for comfort in coffee shop': HTTP Error 429: Too Many Requests",
+    "  pexels 'man seeks woman for comfort in coffee shop': HTTP Error 429: Too Many Requests",
+    "  clips 200/224 (pexels calls 180, match score 0.380)",
+    "  average match score 0.391",
+    "== 4. video 16:9 with subtitles + avatar (26.5 min)",
+    "  main: 224 scenes, 26.5 min, 4 at a time (superfast)",
+    "  main: 40/224 scenes ready",
+    "  main: 80/224 scenes ready",
+    "  main: 120/224 scenes ready",
+    "  main: 160/224 scenes ready",
+    "  main: 200/224 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (825 MB)",
+    "  upload 2%",
+    "  upload 12%",
+    "  upload 22%",
+    "  upload 32%",
+    "  upload 42%",
+    "  upload 52%",
+    "  upload 63%",
+    "  upload 73%",
+    "  upload 83%",
+    "  upload 93%",
+    "  uploaded https://youtu.be/7q2g39j8FsE (public at 2026-11-26 10:23 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 89%",
+    "  uploaded https://youtu.be/IB60JofCac4 (public at 2026-11-27 10:23 UTC)",
+    "  uploading short_2.mp4 (20 MB)",
+    "  upload 82%",
+    "  uploaded https://youtu.be/eUV_JwgfFaw (public at 2026-11-28 10:23 UTC)"
    ]
   }
  }
