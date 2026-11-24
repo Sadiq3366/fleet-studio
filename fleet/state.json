@@ -1636,6 +1636,73 @@
     "  upload 66%",
     "  uploaded https://youtu.be/xaGAow9FTWY (public at 2026-12-07 10:23 UTC)"
    ]
+  },
+  "4c6a8cadfeab": {
+   "status": "done",
+   "run": "45374982586",
+   "started": "2026-11-24T11:25:56+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "kF1lThOJQks",
+     "publish": "2026-12-05T10:23:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "ZXpJIs6QQLA",
+     "publish": "2026-12-06T10:23:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "jAq_vyQUyQM",
+     "publish": "2026-12-07T10:23:00+00:00"
+    }
+   ],
+   "finished": "2026-11-24T12:13:16+00:00",
+   "title": "LO QUE UN HOMBRE DESEA EN SECRETO Y CASI NUNCA SE ATREVE A DECIR | NILDA CHIARAVIGLIO",
+   "log": [
+    "  main: 411 scenes, 59.2 min, 4 at a time (superfast)",
+    "  main: 40/411 scenes ready",
+    "  main: 80/411 scenes ready",
+    "  main: 120/411 scenes ready",
+    "  main: 160/411 scenes ready",
+    "  main: 200/411 scenes ready",
+    "  main: 240/411 scenes ready",
+    "  main: 280/411 scenes ready",
+    "  main: 320/411 scenes ready",
+    "  main: 360/411 scenes ready",
+    "  main: 400/411 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 6 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 6 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 6 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 6 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1816 MB)",
+    "  upload 0%",
+    "  upload 10%",
+    "  upload 20%",
+    "  upload 30%",
+    "  upload 40%",
+    "  upload 50%",
+    "  upload 60%",
+    "  upload 70%",
+    "  upload 80%",
+    "  upload 90%",
+    "  uploaded https://youtu.be/kF1lThOJQks (public at 2026-12-05 10:23 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (18 MB)",
+    "  upload 92%",
+    "  uploaded https://youtu.be/ZXpJIs6QQLA (public at 2026-12-06 10:23 UTC)",
+    "  uploading short_2.mp4 (22 MB)",
+    "  upload 76%",
+    "  uploaded https://youtu.be/jAq_vyQUyQM (public at 2026-12-07 10:23 UTC)"
+   ]
   }
  }
 }
