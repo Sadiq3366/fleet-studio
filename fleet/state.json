@@ -1771,6 +1771,73 @@
     "  upload 98%",
     "  uploaded https://youtu.be/qwD547nNsiA (public at 2026-12-16 07:27 UTC)"
    ]
+  },
+  "b8b3e90bfcd1": {
+   "status": "done",
+   "run": "45399514727",
+   "started": "2026-11-24T13:57:22+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "oi1K5hbYO_A",
+     "publish": "2026-12-14T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "dK6woLwV30A",
+     "publish": "2026-12-15T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "nL1iFhrgeSY",
+     "publish": "2026-12-16T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-24T14:52:21+00:00",
+   "title": "5 SEÑALES DE QUE NO TE AMA, AUNQUE TE DIGA LO CONTRARIO | WALTER RISO",
+   "log": [
+    "  main: 405 scenes, 57.0 min, 4 at a time (superfast)",
+    "  main: 40/405 scenes ready",
+    "  main: 80/405 scenes ready",
+    "  main: 120/405 scenes ready",
+    "  main: 160/405 scenes ready",
+    "  main: 200/405 scenes ready",
+    "  main: 240/405 scenes ready",
+    "  main: 280/405 scenes ready",
+    "  main: 320/405 scenes ready",
+    "  main: 360/405 scenes ready",
+    "  main: 400/405 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 7 scenes, 1.0 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1641 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 21%",
+    "  upload 31%",
+    "  upload 41%",
+    "  upload 51%",
+    "  upload 61%",
+    "  upload 71%",
+    "  upload 81%",
+    "  upload 91%",
+    "  uploaded https://youtu.be/oi1K5hbYO_A (public at 2026-12-14 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 88%",
+    "  uploaded https://youtu.be/dK6woLwV30A (public at 2026-12-15 07:27 UTC)",
+    "  uploading short_2.mp4 (20 MB)",
+    "  upload 84%",
+    "  uploaded https://youtu.be/nL1iFhrgeSY (public at 2026-12-16 07:27 UTC)"
+   ]
   }
  }
 }
