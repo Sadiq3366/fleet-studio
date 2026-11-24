@@ -1501,6 +1501,73 @@
     "  upload 77%",
     "  uploaded https://youtu.be/-N6kdUrbA44 (public at 2026-12-13 07:27 UTC)"
    ]
+  },
+  "814186b5b4cd": {
+   "status": "done",
+   "run": "45319985516",
+   "started": "2026-11-24T04:35:21+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "o3K0qRhKKqc",
+     "publish": "2026-12-11T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "SbUwmIwGJ6M",
+     "publish": "2026-12-12T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "lrw0I-71ZJo",
+     "publish": "2026-12-13T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-24T05:20:39+00:00",
+   "title": "CUANDO DEJAS DE ACEPTAR MIGAJAS, ÉL DESCUBRE LO QUE PERDIÓ | WALTER RISO",
+   "log": [
+    "  clips 300/340 (pexels calls 180, match score 0.239)",
+    "  clips 325/340 (pexels calls 180, match score 0.215)",
+    "  average match score 0.332",
+    "== 4. video 16:9 with subtitles + avatar (39.3 min)",
+    "  main: 340 scenes, 39.3 min, 4 at a time (superfast)",
+    "  main: 40/340 scenes ready",
+    "  main: 80/340 scenes ready",
+    "  main: 120/340 scenes ready",
+    "  main: 160/340 scenes ready",
+    "  main: 200/340 scenes ready",
+    "  main: 240/340 scenes ready",
+    "  main: 280/340 scenes ready",
+    "  main: 320/340 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 5 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 5 scenes, 0.5 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 9 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 9 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1031 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 21%",
+    "  upload 32%",
+    "  upload 42%",
+    "  upload 52%",
+    "  upload 63%",
+    "  upload 73%",
+    "  upload 83%",
+    "  upload 94%",
+    "  uploaded https://youtu.be/o3K0qRhKKqc (public at 2026-12-11 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (7 MB)",
+    "  uploaded https://youtu.be/SbUwmIwGJ6M (public at 2026-12-12 07:27 UTC)",
+    "  uploading short_2.mp4 (13 MB)",
+    "  uploaded https://youtu.be/lrw0I-71ZJo (public at 2026-12-13 07:27 UTC)"
+   ]
   }
  }
 }
