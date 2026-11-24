@@ -26,11 +26,12 @@
    ]
   },
   "31a85b08eecd": {
-   "last_slot": "2026-11-29T10:23:00+00:00",
+   "last_slot": "2026-12-02T10:23:00+00:00",
    "slots": [
     "2026-11-23T10:23:00+00:00",
     "2026-11-26T10:23:00+00:00",
-    "2026-11-29T10:23:00+00:00"
+    "2026-11-29T10:23:00+00:00",
+    "2026-12-02T10:23:00+00:00"
    ]
   }
  },
@@ -1297,6 +1298,73 @@
     "  uploading short_2.mp4 (20 MB)",
     "  upload 82%",
     "  uploaded https://youtu.be/2xXsIcRtmtQ (public at 2026-12-01 10:23 UTC)"
+   ]
+  },
+  "cc612606dd55": {
+   "status": "done",
+   "run": "45310033104",
+   "started": "2026-11-24T02:08:45+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "gD2j-0UPXkg",
+     "publish": "2026-12-02T10:23:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "yT-7s8Wn8qQ",
+     "publish": "2026-12-03T10:23:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "VEJzrSmbn70",
+     "publish": "2026-12-04T10:23:00+00:00"
+    }
+   ],
+   "finished": "2026-11-24T02:40:53+00:00",
+   "title": "3 CLAVES PSICOLÓGICAS PARA VOLVERTE INOLVIDABLE PARA ÉL | NILDA CHIARAVIGLIO",
+   "log": [
+    "  clips 250/313 (pexels calls 180, match score 0.321)",
+    "  clips 275/313 (pexels calls 180, match score 0.294)",
+    "  clips 300/313 (pexels calls 180, match score 0.273)",
+    "  average match score 0.365",
+    "== 4. video 16:9 with subtitles + avatar (42.3 min)",
+    "  main: 313 scenes, 42.3 min, 4 at a time (superfast)",
+    "  main: 40/313 scenes ready",
+    "  main: 80/313 scenes ready",
+    "  main: 120/313 scenes ready",
+    "  main: 160/313 scenes ready",
+    "  main: 200/313 scenes ready",
+    "  main: 240/313 scenes ready",
+    "  main: 280/313 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 6 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 6 scenes, 0.7 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1234 MB)",
+    "  upload 1%",
+    "  upload 12%",
+    "  upload 23%",
+    "  upload 33%",
+    "  upload 43%",
+    "  upload 53%",
+    "  upload 63%",
+    "  upload 73%",
+    "  upload 84%",
+    "  upload 95%",
+    "  uploaded https://youtu.be/gD2j-0UPXkg (public at 2026-12-02 10:23 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (14 MB)",
+    "  uploaded https://youtu.be/yT-7s8Wn8qQ (public at 2026-12-03 10:23 UTC)",
+    "  uploading short_2.mp4 (15 MB)",
+    "  uploaded https://youtu.be/VEJzrSmbn70 (public at 2026-12-04 10:23 UTC)"
    ]
   }
  }
