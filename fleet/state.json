@@ -27,12 +27,13 @@
    ]
   },
   "31a85b08eecd": {
-   "last_slot": "2026-12-02T10:23:00+00:00",
+   "last_slot": "2026-12-05T10:23:00+00:00",
    "slots": [
     "2026-11-23T10:23:00+00:00",
     "2026-11-26T10:23:00+00:00",
     "2026-11-29T10:23:00+00:00",
-    "2026-12-02T10:23:00+00:00"
+    "2026-12-02T10:23:00+00:00",
+    "2026-12-05T10:23:00+00:00"
    ]
   }
  },
@@ -1567,6 +1568,73 @@
     "  uploaded https://youtu.be/SbUwmIwGJ6M (public at 2026-12-12 07:27 UTC)",
     "  uploading short_2.mp4 (13 MB)",
     "  uploaded https://youtu.be/lrw0I-71ZJo (public at 2026-12-13 07:27 UTC)"
+   ]
+  },
+  "db381e0eaacb": {
+   "status": "done",
+   "run": "45374159861",
+   "started": "2026-11-24T10:24:24+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "dKxRezf4kD0",
+     "publish": "2026-12-05T10:23:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "99yxy15Yf6o",
+     "publish": "2026-12-06T10:23:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "xaGAow9FTWY",
+     "publish": "2026-12-07T10:23:00+00:00"
+    }
+   ],
+   "finished": "2026-11-24T11:22:50+00:00",
+   "title": "4 COSAS QUE UNA MUJER INTELIGENTE NUNCA DEBE CONTAR | NILDA CHIARAVIGLIO",
+   "log": [
+    "  main: 80/480 scenes ready",
+    "  main: 120/480 scenes ready",
+    "  main: 160/480 scenes ready",
+    "  main: 200/480 scenes ready",
+    "  main: 240/480 scenes ready",
+    "  main: 280/480 scenes ready",
+    "  main: 320/480 scenes ready",
+    "  main: 360/480 scenes ready",
+    "  main: 400/480 scenes ready",
+    "  main: 440/480 scenes ready",
+    "  main: 480/480 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 6 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 6 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 7 scenes, 0.8 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (2264 MB)",
+    "  upload 0%",
+    "  upload 10%",
+    "  upload 20%",
+    "  upload 30%",
+    "  upload 40%",
+    "  upload 50%",
+    "  upload 60%",
+    "  upload 70%",
+    "  upload 80%",
+    "  upload 90%",
+    "  uploaded https://youtu.be/dKxRezf4kD0 (public at 2026-12-05 10:23 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (20 MB)",
+    "  upload 82%",
+    "  uploaded https://youtu.be/99yxy15Yf6o (public at 2026-12-06 10:23 UTC)",
+    "  uploading short_2.mp4 (25 MB)",
+    "  upload 66%",
+    "  uploaded https://youtu.be/xaGAow9FTWY (public at 2026-12-07 10:23 UTC)"
    ]
   }
  }
