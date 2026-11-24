@@ -1366,6 +1366,73 @@
     "  uploading short_2.mp4 (15 MB)",
     "  uploaded https://youtu.be/VEJzrSmbn70 (public at 2026-12-04 10:23 UTC)"
    ]
+  },
+  "ef22edeebb37": {
+   "status": "done",
+   "run": "45310663995",
+   "started": "2026-11-24T02:43:28+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "uz38B9ibWc8",
+     "publish": "2026-12-02T10:23:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "D2SUzAvukrM",
+     "publish": "2026-12-03T10:23:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "pE1m8zs-n0U",
+     "publish": "2026-12-04T10:23:00+00:00"
+    }
+   ],
+   "finished": "2026-11-24T03:26:16+00:00",
+   "title": "7 CLAVES PSICOLÓGICAS PARA QUE ÉL TE BUSQUE, TE EXTRAÑE Y NO TE OLVIDE | NILDA CHIARAVIGLIO",
+   "log": [
+    "  main: 387 scenes, 53.6 min, 4 at a time (superfast)",
+    "  main: 40/387 scenes ready",
+    "  main: 80/387 scenes ready",
+    "  main: 120/387 scenes ready",
+    "  main: 160/387 scenes ready",
+    "  main: 200/387 scenes ready",
+    "  main: 240/387 scenes ready",
+    "  main: 280/387 scenes ready",
+    "  main: 320/387 scenes ready",
+    "  main: 360/387 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 8 scenes, 1.0 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1680 MB)",
+    "  upload 0%",
+    "  upload 10%",
+    "  upload 20%",
+    "  upload 30%",
+    "  upload 40%",
+    "  upload 50%",
+    "  upload 60%",
+    "  upload 70%",
+    "  upload 80%",
+    "  upload 90%",
+    "  uploaded https://youtu.be/uz38B9ibWc8 (public at 2026-12-02 10:23 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 86%",
+    "  uploaded https://youtu.be/D2SUzAvukrM (public at 2026-12-03 10:23 UTC)",
+    "  uploading short_2.mp4 (38 MB)",
+    "  upload 44%",
+    "  upload 89%",
+    "  uploaded https://youtu.be/pE1m8zs-n0U (public at 2026-12-04 10:23 UTC)"
+   ]
   }
  }
 }
