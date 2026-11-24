@@ -1,7 +1,7 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-12-08T07:27:00+00:00",
+   "last_slot": "2026-12-11T07:27:00+00:00",
    "slots": [
     "2026-11-18T07:27:00+00:00",
     "2026-11-20T07:27:00+00:00",
@@ -10,7 +10,8 @@
     "2026-11-29T07:27:00+00:00",
     "2026-12-02T07:27:00+00:00",
     "2026-12-05T07:27:00+00:00",
-    "2026-12-08T07:27:00+00:00"
+    "2026-12-08T07:27:00+00:00",
+    "2026-12-11T07:27:00+00:00"
    ]
   },
   "50ab3e4e36ea": {
@@ -1432,6 +1433,73 @@
     "  upload 44%",
     "  upload 89%",
     "  uploaded https://youtu.be/pE1m8zs-n0U (public at 2026-12-04 10:23 UTC)"
+   ]
+  },
+  "ff58eb0f6e4a": {
+   "status": "done",
+   "run": "45316101920",
+   "started": "2026-11-24T03:29:06+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "RNkuncWm6ZU",
+     "publish": "2026-12-11T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "HkIK6FUJqbE",
+     "publish": "2026-12-12T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "-N6kdUrbA44",
+     "publish": "2026-12-13T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-24T04:30:52+00:00",
+   "title": "NO TENGAS MIEDO DE PERDER A QUIEN NO TEME PERDERTE | WALTER RISO",
+   "log": [
+    "  main: 120/593 scenes ready",
+    "  main: 160/593 scenes ready",
+    "  main: 200/593 scenes ready",
+    "  main: 240/593 scenes ready",
+    "  main: 280/593 scenes ready",
+    "  main: 320/593 scenes ready",
+    "  main: 360/593 scenes ready",
+    "  main: 400/593 scenes ready",
+    "  main: 440/593 scenes ready",
+    "  main: 480/593 scenes ready",
+    "  main: 520/593 scenes ready",
+    "  main: 560/593 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 6 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 6 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (5561 MB)",
+    "  upload 0%",
+    "  upload 10%",
+    "  upload 20%",
+    "  upload 30%",
+    "  upload 40%",
+    "  upload 50%",
+    "  upload 60%",
+    "  upload 70%",
+    "  upload 80%",
+    "  upload 90%",
+    "  uploaded https://youtu.be/RNkuncWm6ZU (public at 2026-12-11 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (15 MB)",
+    "  uploaded https://youtu.be/HkIK6FUJqbE (public at 2026-12-12 07:27 UTC)",
+    "  uploading short_2.mp4 (22 MB)",
+    "  upload 77%",
+    "  uploaded https://youtu.be/-N6kdUrbA44 (public at 2026-12-13 07:27 UTC)"
    ]
   }
  }
