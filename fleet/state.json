@@ -1,7 +1,7 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-12-11T07:27:00+00:00",
+   "last_slot": "2026-12-14T07:27:00+00:00",
    "slots": [
     "2026-11-18T07:27:00+00:00",
     "2026-11-20T07:27:00+00:00",
@@ -11,7 +11,8 @@
     "2026-12-02T07:27:00+00:00",
     "2026-12-05T07:27:00+00:00",
     "2026-12-08T07:27:00+00:00",
-    "2026-12-11T07:27:00+00:00"
+    "2026-12-11T07:27:00+00:00",
+    "2026-12-14T07:27:00+00:00"
    ]
   },
   "50ab3e4e36ea": {
@@ -1702,6 +1703,73 @@
     "  uploading short_2.mp4 (22 MB)",
     "  upload 76%",
     "  uploaded https://youtu.be/jAq_vyQUyQM (public at 2026-12-07 10:23 UTC)"
+   ]
+  },
+  "04e0a55c162a": {
+   "status": "done",
+   "run": "45399001188",
+   "started": "2026-11-24T13:01:59+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "t-OJ620JaAU",
+     "publish": "2026-12-14T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "aw9nGo1b2Bs",
+     "publish": "2026-12-15T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "qwD547nNsiA",
+     "publish": "2026-12-16T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-24T13:54:25+00:00",
+   "title": "CÓMO HACER QUE UN HOMBRE SE ENAMORE DE TI DE VERDAD | WALTER RISO",
+   "log": [
+    "  main: 473 scenes, 72.2 min, 4 at a time (superfast)",
+    "  main: 40/473 scenes ready",
+    "  main: 80/473 scenes ready",
+    "  main: 120/473 scenes ready",
+    "  main: 160/473 scenes ready",
+    "  main: 200/473 scenes ready",
+    "  main: 240/473 scenes ready",
+    "  main: 280/473 scenes ready",
+    "  main: 320/473 scenes ready",
+    "  main: 360/473 scenes ready",
+    "  main: 400/473 scenes ready",
+    "  main: 440/473 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (2280 MB)",
+    "  upload 0%",
+    "  upload 10%",
+    "  upload 20%",
+    "  upload 30%",
+    "  upload 40%",
+    "  upload 50%",
+    "  upload 60%",
+    "  upload 70%",
+    "  upload 80%",
+    "  upload 90%",
+    "  uploaded https://youtu.be/t-OJ620JaAU (public at 2026-12-14 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (15 MB)",
+    "  uploaded https://youtu.be/aw9nGo1b2Bs (public at 2026-12-15 07:27 UTC)",
+    "  uploading short_2.mp4 (17 MB)",
+    "  upload 98%",
+    "  uploaded https://youtu.be/qwD547nNsiA (public at 2026-12-16 07:27 UTC)"
    ]
   }
  }
