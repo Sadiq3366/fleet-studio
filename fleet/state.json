@@ -16,7 +16,7 @@
    ]
   },
   "50ab3e4e36ea": {
-   "last_slot": "2026-12-12T13:17:00+00:00",
+   "last_slot": "2026-12-16T13:17:00+00:00",
    "slots": [
     "2026-11-18T13:17:00+00:00",
     "2026-11-22T13:17:00+00:00",
@@ -24,7 +24,8 @@
     "2026-11-30T13:17:00+00:00",
     "2026-12-04T13:17:00+00:00",
     "2026-12-08T13:17:00+00:00",
-    "2026-12-12T13:17:00+00:00"
+    "2026-12-12T13:17:00+00:00",
+    "2026-12-16T13:17:00+00:00"
    ]
   },
   "31a85b08eecd": {
@@ -1955,6 +1956,73 @@
     "  uploading short_2.mp4 (19 MB)",
     "  upload 86%",
     "  uploaded https://youtu.be/OP87k11d5AA (public at 2026-12-10 10:23 UTC)"
+   ]
+  },
+  "e47b8e261ceb": {
+   "status": "done",
+   "run": "45565101203",
+   "started": "2026-11-25T07:04:54+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "KEjOR3PFB50",
+     "publish": "2026-12-16T13:17:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "OPZSmQnauOg",
+     "publish": "2026-12-17T21:17:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "l6Ib_ZN2zNY",
+     "publish": "2026-12-19T05:17:00+00:00"
+    }
+   ],
+   "finished": "2026-11-25T08:11:13+00:00",
+   "title": "Joseph Merrick: The Tragic Life of the Elephant Man | Full Documentary",
+   "log": [
+    "  average match score -3.801; 92 photos, 174 film clips",
+    "  51 scenes had no picture - they show the picture of the scene next to them",
+    "== 4. video 16:9 with subtitles + music (46.3 min)",
+    "  main: 317 scenes, 46.3 min, 4 at a time (superfast)",
+    "  main: 40/317 scenes ready",
+    "  main: 80/317 scenes ready",
+    "  main: 120/317 scenes ready",
+    "  main: 160/317 scenes ready",
+    "  main: 200/317 scenes ready",
+    "  main: 240/317 scenes ready",
+    "  main: 280/317 scenes ready",
+    "== 5. thumbnail",
+    "  thumbnail words: ['MYSTIC GENTLEMAN', 'THE",
+    "  removing the avatar background (rembg)...",
+    "documentary thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: the long video's archive pictures for 6 sentences",
+    "  short1: 6 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: the long video's archive pictures for 8 sentences",
+    "  short2: 8 scenes, 1.0 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1856 MB)",
+    "  upload 0%",
+    "  upload 10%",
+    "  upload 20%",
+    "  upload 30%",
+    "  upload 40%",
+    "  upload 50%",
+    "  upload 60%",
+    "  upload 70%",
+    "  upload 80%",
+    "  upload 90%",
+    "  uploaded https://youtu.be/KEjOR3PFB50 (public at 2026-12-16 13:17 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (21 MB)",
+    "  upload 80%",
+    "  uploaded https://youtu.be/OPZSmQnauOg (public at 2026-12-17 21:17 UTC)",
+    "  uploading short_2.mp4 (18 MB)",
+    "  upload 93%",
+    "  uploaded https://youtu.be/l6Ib_ZN2zNY (public at 2026-12-19 05:17 UTC)"
    ]
   }
  }
