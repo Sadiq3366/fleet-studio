@@ -28,13 +28,14 @@
    ]
   },
   "31a85b08eecd": {
-   "last_slot": "2026-12-05T10:23:00+00:00",
+   "last_slot": "2026-12-08T10:23:00+00:00",
    "slots": [
     "2026-11-23T10:23:00+00:00",
     "2026-11-26T10:23:00+00:00",
     "2026-11-29T10:23:00+00:00",
     "2026-12-02T10:23:00+00:00",
-    "2026-12-05T10:23:00+00:00"
+    "2026-12-05T10:23:00+00:00",
+    "2026-12-08T10:23:00+00:00"
    ]
   }
  },
@@ -1887,6 +1888,73 @@
     "  short2: 8 scenes, 1.0 min, 4 at a time (veryfast)",
     "== 7. uploading to YouTube",
     "  uploading video.mp4 (1791 MB)"
+   ]
+  },
+  "7ec8c495bafb": {
+   "status": "done",
+   "run": "45557751732",
+   "started": "2026-11-25T06:13:26+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "Ch6WtdNrWOk",
+     "publish": "2026-12-08T10:23:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "VxRzJof2-Vk",
+     "publish": "2026-12-09T10:23:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "OP87k11d5AA",
+     "publish": "2026-12-10T10:23:00+00:00"
+    }
+   ],
+   "finished": "2026-11-25T06:42:16+00:00",
+   "title": "CÓMO UNA MUJER DE ALTO VALOR PONE LÍMITES SIN DECIR UNA PALABRA | NILDA CHIARAVIGLIO",
+   "log": [
+    "  clips 200/250 (pexels calls 180, match score 0.360)",
+    "  clips 225/250 (pexels calls 180, match score 0.321)",
+    "  clips 250/250 (pexels calls 180, match score 0.298)",
+    "  average match score 0.367",
+    "== 4. video 16:9 with subtitles + avatar (30.1 min)",
+    "  main: 250 scenes, 30.1 min, 4 at a time (superfast)",
+    "  main: 40/250 scenes ready",
+    "  main: 80/250 scenes ready",
+    "  main: 120/250 scenes ready",
+    "  main: 160/250 scenes ready",
+    "  main: 200/250 scenes ready",
+    "  main: 240/250 scenes ready",
+    "== 5. thumbnail",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 9 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 9 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 9 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 9 scenes, 1.0 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (903 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 22%",
+    "  upload 33%",
+    "  upload 44%",
+    "  upload 55%",
+    "  upload 65%",
+    "  upload 76%",
+    "  upload 87%",
+    "  upload 98%",
+    "  uploaded https://youtu.be/Ch6WtdNrWOk (public at 2026-12-08 10:23 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 87%",
+    "  uploaded https://youtu.be/VxRzJof2-Vk (public at 2026-12-09 10:23 UTC)",
+    "  uploading short_2.mp4 (19 MB)",
+    "  upload 86%",
+    "  uploaded https://youtu.be/OP87k11d5AA (public at 2026-12-10 10:23 UTC)"
    ]
   }
  }
