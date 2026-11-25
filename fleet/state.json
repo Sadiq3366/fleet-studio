@@ -2092,6 +2092,73 @@
     "  uploading short_2.mp4 (15 MB)",
     "  uploaded https://youtu.be/B_wejg86iAI (public at 2026-12-19 07:27 UTC)"
    ]
+  },
+  "039e78bedc21": {
+   "status": "done",
+   "run": "45594411082",
+   "started": "2026-11-25T11:16:43+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "C_cKt6hY63A",
+     "publish": "2026-12-17T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "-SVM9EO7jQo",
+     "publish": "2026-12-18T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "lzLWT4TteIs",
+     "publish": "2026-12-19T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-25T11:40:11+00:00",
+   "title": "3 SECRETOS PSICOLÓGICOS DE LOS HOMBRES QUE CASI NINGUNA MUJER CONOCE | WALTER RISO",
+   "log": [
+    "  clips 225/258 (pexels calls 180, match score 0.329)",
+    "  clips 250/258 (pexels calls 180, match score 0.297)",
+    "  average match score 0.367",
+    "== 4. video 16:9 with subtitles + avatar (30.2 min)",
+    "  main: 258 scenes, 30.2 min, 4 at a time (superfast)",
+    "  main: 40/258 scenes ready",
+    "  main: 80/258 scenes ready",
+    "  main: 120/258 scenes ready",
+    "  main: 160/258 scenes ready",
+    "  main: 200/258 scenes ready",
+    "  main: 240/258 scenes ready",
+    "== 5. thumbnail",
+    "thumbnail made",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 11 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 11 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (877 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 21%",
+    "  upload 32%",
+    "  upload 42%",
+    "  upload 53%",
+    "  upload 63%",
+    "  upload 74%",
+    "  upload 84%",
+    "  upload 95%",
+    "  uploaded https://youtu.be/C_cKt6hY63A (public at 2026-12-17 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (21 MB)",
+    "  upload 80%",
+    "  uploaded https://youtu.be/-SVM9EO7jQo (public at 2026-12-18 07:27 UTC)",
+    "  uploading short_2.mp4 (18 MB)",
+    "  upload 95%",
+    "  uploaded https://youtu.be/lzLWT4TteIs (public at 2026-12-19 07:27 UTC)"
+   ]
   }
  }
 }
