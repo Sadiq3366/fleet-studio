@@ -154,14 +154,29 @@ def channel_uploads(yt, handle):
             return out
 
 
+def clean_text(s, max_bytes, single_line=False):
+    """YouTube rejects '<' and '>' , control characters, and descriptions over 5000 BYTES (not characters)."""
+    s = (s or "").replace("<", "‹").replace(">", "›")
+    s = "".join(ch for ch in s if ch in "\n\t" or (ch.isprintable() and ch not in "﻿​  "))
+    if single_line:
+        s = " ".join(s.split())
+    s = s.strip()
+    while len(s.encode("utf-8")) > max_bytes:
+        s = s[:-max(1, (len(s.encode("utf-8")) - max_bytes) // 3)]
+    return s.strip()
+
+
 def upload(yt, path, title, desc, tags, publish_at, thumb, log, lang=None):
     from googleapiclient.http import MediaFileUpload
+    title = clean_text(title, 300, True)[:100]
+    desc = clean_text(desc, 4800)
+    tags = [clean_text(t, 100, True).replace(",", " ") for t in tags if t]
     status = {"selfDeclaredMadeForKids": False}
     if publish_at:
         status.update(privacyStatus="private", publishAt=publish_at.strftime("%Y-%m-%dT%H:%M:%S.000Z"))
     else:
         status["privacyStatus"] = "public"
-    snip = {"title": title[:100], "description": desc[:4900], "tags": tags[:30], "categoryId": "22"}
+    snip = {"title": title[:100], "description": desc, "tags": [t for t in tags if t][:30], "categoryId": "22"}
     if lang:
         snip["defaultLanguage"] = snip["defaultAudioLanguage"] = lang
     req = yt.videos().insert(part="snippet,status", body={"snippet": snip, "status": status},
