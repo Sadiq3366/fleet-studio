@@ -1,7 +1,7 @@
 {
  "channels": {
   "81e373f0813b": {
-   "last_slot": "2026-12-17T07:27:00+00:00",
+   "last_slot": "2026-12-20T07:27:00+00:00",
    "slots": [
     "2026-11-18T07:27:00+00:00",
     "2026-11-20T07:27:00+00:00",
@@ -13,7 +13,8 @@
     "2026-12-08T07:27:00+00:00",
     "2026-12-11T07:27:00+00:00",
     "2026-12-14T07:27:00+00:00",
-    "2026-12-17T07:27:00+00:00"
+    "2026-12-17T07:27:00+00:00",
+    "2026-12-20T07:27:00+00:00"
    ]
   },
   "50ab3e4e36ea": {
@@ -2158,6 +2159,73 @@
     "  uploading short_2.mp4 (18 MB)",
     "  upload 95%",
     "  uploaded https://youtu.be/lzLWT4TteIs (public at 2026-12-19 07:27 UTC)"
+   ]
+  },
+  "ab047f74bb30": {
+   "status": "done",
+   "run": "45776182200",
+   "started": "2026-11-26T07:35:28+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "VqtpDqsEjU4",
+     "publish": "2026-12-20T07:27:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "WTbyYpV3tmc",
+     "publish": "2026-12-21T07:27:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "e_muTk29aL8",
+     "publish": "2026-12-22T07:27:00+00:00"
+    }
+   ],
+   "finished": "2026-11-26T08:38:15+00:00",
+   "title": "3 ERRORES QUE PUEDEN ALEJAR A UN HOMBRE QUE TE AMA | NILDA CHIARAVIGLIO | Walter Riso",
+   "log": [
+    "  average match score 0.357",
+    "== 4. video 16:9 with subtitles + avatar (52.0 min)",
+    "  main: 373 scenes, 52.0 min, 4 at a time (superfast)",
+    "  main: 40/373 scenes ready",
+    "  main: 80/373 scenes ready",
+    "  main: 120/373 scenes ready",
+    "  main: 160/373 scenes ready",
+    "  main: 200/373 scenes ready",
+    "  main: 240/373 scenes ready",
+    "  main: 280/373 scenes ready",
+    "  main: 320/373 scenes ready",
+    "  main: 360/373 scenes ready",
+    "== 5. thumbnail",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 7 scenes, 0.9 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 8 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 8 scenes, 0.9 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (1619 MB)",
+    "  upload 1%",
+    "  upload 11%",
+    "  upload 21%",
+    "  upload 31%",
+    "  upload 41%",
+    "  upload 51%",
+    "  upload 61%",
+    "  upload 71%",
+    "  upload 81%",
+    "  upload 91%",
+    "  uploaded https://youtu.be/VqtpDqsEjU4 (public at 2026-12-20 07:27 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (19 MB)",
+    "  upload 87%",
+    "  uploaded https://youtu.be/WTbyYpV3tmc (public at 2026-12-21 07:27 UTC)",
+    "  uploading short_2.mp4 (20 MB)",
+    "  upload 85%",
+    "  uploaded https://youtu.be/e_muTk29aL8 (public at 2026-12-22 07:27 UTC)"
    ]
   }
  }
