@@ -2295,6 +2295,73 @@
     "  upload 82%",
     "  uploaded https://youtu.be/E1V8hTfvfgI (public at 2026-12-13 10:23 UTC)"
    ]
+  },
+  "a8750ab66a15": {
+   "status": "done",
+   "run": "45797556537",
+   "started": "2026-11-26T10:58:39+00:00",
+   "error": null,
+   "youtube": [
+    {
+     "kind": "video",
+     "id": "83mWmLcpULE",
+     "publish": "2026-12-11T10:23:00+00:00"
+    },
+    {
+     "kind": "short 1",
+     "id": "Sci6TW5DyTE",
+     "publish": "2026-12-12T10:23:00+00:00"
+    },
+    {
+     "kind": "short 2",
+     "id": "I9-mHjYT9Qc",
+     "publish": "2026-12-13T10:23:00+00:00"
+    }
+   ],
+   "finished": "2026-11-26T11:36:58+00:00",
+   "title": "CUANDO ELLA DEJA DE ROGAR, ÉL DESCUBRE LO QUE PERDIÓ | NILDA CHIARAVIGLIO",
+   "log": [
+    "  clips 200/255 (pexels calls 180, match score 0.361)",
+    "  clips 225/255 (pexels calls 180, match score 0.333)",
+    "  clips 250/255 (pexels calls 180, match score 0.309)",
+    "  average match score 0.374",
+    "== 4. video 16:9 with subtitles + avatar (30.8 min)",
+    "  main: 255 scenes, 30.8 min, 4 at a time (superfast)",
+    "  main: 40/255 scenes ready",
+    "  main: 80/255 scenes ready",
+    "  main: 120/255 scenes ready",
+    "  main: 160/255 scenes ready",
+    "  main: 200/255 scenes ready",
+    "  main: 240/255 scenes ready",
+    "== 5. thumbnail",
+    "== 6. vertical Shorts",
+    "  short 1: vertical HD videos for 7 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short1: 7 scenes, 1.0 min, 4 at a time (veryfast)",
+    "  short 2: vertical HD videos for 9 sentences",
+    "  loading the visual matching model (CLIP)...",
+    "  short2: 9 scenes, 0.8 min, 4 at a time (veryfast)",
+    "== 7. uploading to YouTube",
+    "  uploading video.mp4 (924 MB)",
+    "  upload 1%",
+    "  upload 12%",
+    "  upload 23%",
+    "  upload 34%",
+    "  upload 45%",
+    "  upload 56%",
+    "  upload 67%",
+    "  upload 78%",
+    "  upload 88%",
+    "  upload 98%",
+    "  uploaded https://youtu.be/83mWmLcpULE (public at 2026-12-11 10:23 UTC)",
+    "  winning thumbnail attached",
+    "  uploading short_1.mp4 (18 MB)",
+    "  upload 91%",
+    "  uploaded https://youtu.be/Sci6TW5DyTE (public at 2026-12-12 10:23 UTC)",
+    "  uploading short_2.mp4 (18 MB)",
+    "  upload 95%",
+    "  uploaded https://youtu.be/I9-mHjYT9Qc (public at 2026-12-13 10:23 UTC)"
+   ]
   }
  }
 }
